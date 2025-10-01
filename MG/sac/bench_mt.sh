@@ -27,7 +27,7 @@ outfile="$3/MG_${class}_mt_sac"
 pmax="$4"
 mkdir -p "$3"
 
-make CLASS="$class" mt -j
+make CLASS="$class" mt -j1
 
 printf 'p,mean,stddev fullspec\n' > "${outfile}"
 

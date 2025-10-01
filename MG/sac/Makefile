@@ -4,7 +4,7 @@ CUDA_LPATH := host/cuda
 
 DYLIB := so                          # adjust to your system (e.g. so)
 
-SAC2C := /home/ruben/Repos/sac2c/build_p/sac2c_p                  # may need to adjust if sac2c is not in your PATH
+SAC2C := /home/rhensen/Repos/sac2c/build_p/sac2c_p                  # may need to adjust if sac2c is not in your PATH
 SAC2CFLAGS := -maxwlur 27 -v3 -noSRP -noSOP -maxoptcyc 20 # when changing you may want to include -check c
 
 all: seq test mt cuda
@@ -59,13 +59,13 @@ bench_cuda:
 
 switch_orig: 
 	@echo "Switching to SAC2C_ORIG configuration..."
-	@sed -i 's|/home/ruben/Repos/sac2c/|/home/ruben/Repos/sacoriginal/sac2c/|g' ~/.sac2crc/sac2crc.debug.prelude ~/.sac2crc/sac2crc.release.prelude
-	@sed -i 's|/home/ruben/Repos/Stdlib/|/home/ruben/Repos/sacoriginal/Stdlib/|g' ~/.sac2crc/sac2crc.package.stdlib
+	@sed -i 's|/home/rhensen/Repos/sac2c/|/home/ruben/Repos/sacoriginal/sac2c/|g' ~/.sac2crc/sac2crc.debug.prelude ~/.sac2crc/sac2crc.release.prelude
+	@sed -i 's|/home/rhensen/Repos/Stdlib/|/home/ruben/Repos/sacoriginal/Stdlib/|g' ~/.sac2crc/sac2crc.package.stdlib
 
 switch_new:
 	@echo "Switching to SAC2C_NEW configuration..."
-	@sed -i 's|/home/ruben/Repos/sacoriginal/sac2c/|/home/ruben/Repos/sac2c/|g' ~/.sac2crc/sac2crc.debug.prelude ~/.sac2crc/sac2crc.release.prelude
-	@sed -i 's|/home/ruben/Repos/sacoriginal/Stdlib/|/home/ruben/Repos/Stdlib/|g' ~/.sac2crc/sac2crc.package.stdlib
+	@sed -i 's|/home/rhensen/Repos/sacoriginal/sac2c/|/home/ruben/Repos/sac2c/|g' ~/.sac2crc/sac2crc.debug.prelude ~/.sac2crc/sac2crc.release.prelude
+	@sed -i 's|/home/rhensen/Repos/sacoriginal/Stdlib/|/home/ruben/Repos/Stdlib/|g' ~/.sac2crc/sac2crc.package.stdlib
 
 
 $(SEQ_LPATH)/lib%Mod.$(DYLIB): src/%.sac

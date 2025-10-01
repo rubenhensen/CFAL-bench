@@ -9,11 +9,11 @@ SAC2CFLAGS := -maxwlur 27 -maxlur 20 -v3 -maxoptcyc 20 # when changing you may w
 
 all: seq test mt cuda
 
-seq: bin/MG_fullspec_${CLASS}_seq bin/MG_nospec_${CLASS}_seq
+seq: | bin/MG_fullspec_${CLASS}_seq bin/MG_nospec_${CLASS}_seq
 
-mt: bin/MG_fullspec_${CLASS}_mt bin/MG_nospec_${CLASS}_mt
+mt: | bin/MG_fullspec_${CLASS}_mt bin/MG_nospec_${CLASS}_mt
 
-cuda: bin/MG_fullspec_${CLASS}_cuda bin/MG_nospec_${CLASS}_cuda 
+cuda: | bin/MG_fullspec_${CLASS}_cuda bin/MG_nospec_${CLASS}_cuda 
 cuda: SAC2CFLAGS += -nomemrt
 
 bin/MG_fullspec_${CLASS}_seq: src/MG_fullspec.sac 

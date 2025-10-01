@@ -29,7 +29,7 @@ mkdir -p "$3"
 
 make CLASS="$class" mt -j
 
-printf 'p,mean,stddev\n' > "${outfile}"
+printf 'p,mean,stddev fullspec\n' > "${outfile}"
 
 p=1
 while [ $p -le "$pmax" ]
@@ -39,7 +39,24 @@ do
         i=1
         while [ $i -le "$runs" ]
         do
-            "bin/MG_${class}_mt" -mt "$p"
+            "bin/MG_fullspec_${class}_mt" -mt "$p"
+            i=$(( i + 1 ))
+        done
+    } | variance >> "${outfile}"
+    p=$(( 2 * p ))
+done
+
+printf 'p,mean,stddev nospec\n' >> "${outfile}"
+
+p=1
+while [ $p -le "$pmax" ]
+do
+    printf '%d,' "$p" >> "${outfile}"
+    {
+        i=1
+        while [ $i -le "$runs" ]
+        do
+            "bin/MG_nospec_${class}_mt" -mt "$p"
             i=$(( i + 1 ))
         done
     } | variance >> "${outfile}"

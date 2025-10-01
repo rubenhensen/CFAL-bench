@@ -34,7 +34,6 @@
 #define ref 0.1583275060440e-9
 #endif
 
-use Input: all;
 use StdIO: all;
 use Math: all;
 use Array: all;
@@ -192,14 +191,10 @@ double L2 (double[.,.,.] r)
 
 int main()
 {
-  i_init = getInterval("init", 1);
   i_mg = getInterval("mg", 2);
 
-  start(i_init);
-  v = init(N);
-  end(i_init);
-  time, unit = returnResultUnit(i_init);
-  fprintf(stderr, "Initalisation took %f %s\n", time, unit);
+  v = {[i, j, k] -> sin(tod(i) / tod(N) + tod(j) / tod(N) + tod(k) / tod(N))
+                 | [i, j, k] < [N, N, N]};
 
   start(i_mg);
   r = MG(v);
@@ -209,6 +204,6 @@ int main()
   printf("%f\n",
       58d * tod(ITER) * tod(N) * tod(N) * tod(N) * 1e-9 / tod(time), unit);
 
-  fprintf(stderr, "Error: %.17e\n", abs(r - ref));
+  fprintf(stderr, "Residual: %.17e\n", r);
   return 0;
 }

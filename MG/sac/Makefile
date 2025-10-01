@@ -4,75 +4,68 @@ CUDA_LPATH := host/cuda
 
 DYLIB := so                          # adjust to your system (e.g. so)
 
-SAC2C := sac2c_p                  # may need to adjust if sac2c is not in your PATH
-SAC2CFLAGS := -maxwlur 27 -v3 -noSRP -noSOP# when changing you may want to include -check c
+SAC2C := /home/ruben/Repos/sac2c/build_p/sac2c_p                  # may need to adjust if sac2c is not in your PATH
+SAC2CFLAGS := -maxwlur 27 -v3 -noSRP -noSOP -maxoptcyc 20 # when changing you may want to include -check c
 
 all: seq test mt cuda
 
-test: bin/RNG_test bin/input_test
+seq: bin/MG_fullspec_${CLASS}_seq bin/MG_nospec_${CLASS}_seq
 
-seq: bin/MG_${CLASS}_seq bin/MG_stride_${CLASS}_seq
+mt: bin/MG_fullspec_${CLASS}_mt bin/MG_nospec_${CLASS}_mt
 
-mt: bin/MG_${CLASS}_mt bin/MG_stride_${CLASS}_mt
-
-cuda: bin/MG_${CLASS}_cuda bin/MG_stride_${CLASS}_cuda
+cuda: bin/MG_fullspec_${CLASS}_cuda bin/MG_nospec_${CLASS}_cuda 
 cuda: SAC2CFLAGS += -nomemrt
 
-bin/MG_${CLASS}_seq: src/MG.sac $(SEQ_LPATH)/libInputMod.$(DYLIB)
+bin/MG_fullspec_${CLASS}_seq: src/MG_fullspec.sac 
 	mkdir -p bin
 	$(SAC2C) -D CLASS_${CLASS}=1 $(SAC2CFLAGS) $< -o$@
-	$(RM) bin/MG_seq.*
+	$(RM) bin/MG_fullspec_seq.*
 
-bin/MG_${CLASS}_mt: src/MG.sac $(MT_LPATH)/libInputMod.$(DYLIB)
+bin/MG_fullspec_${CLASS}_mt: src/MG_fullspec.sac 
 	mkdir -p bin
 	$(SAC2C) -D CLASS_${CLASS}=1 -tmt_pth $(SAC2CFLAGS) $< -o$@
-	$(RM) bin/MG_mt.*
+	$(RM) bin/MG_fullspec_mt.*
 
-bin/MG_${CLASS}_cuda: src/MG.sac $(CUDA_LPATH)/libInputMod.$(DYLIB)
+bin/MG_fullspec_${CLASS}_cuda: src/MG_fullspec.sac 
 	mkdir -p bin
 	$(SAC2C) -D CLASS_${CLASS}=1 -tcuda_man $(SAC2CFLAGS) $< -o$@
-	$(RM) bin/MG_cuda.*
+	$(RM) bin/MG_fullspec_cuda.*
 
-bin/MG_stride_${CLASS}_seq: src/MG_stride.sac $(SEQ_LPATH)/libInputMod.$(DYLIB)
+bin/MG_nospec_${CLASS}_seq: src/MG_nospec.sac 
 	mkdir -p bin
 	$(SAC2C) -D CLASS_${CLASS}=1 $(SAC2CFLAGS) $< -o$@
-	$(RM) bin/MG_stride_seq.*
+	$(RM) bin/MG_nospec_seq.*
 
-bin/MG_stride_${CLASS}_mt: src/MG_stride.sac $(MT_LPATH)/libInputMod.$(DYLIB)
+bin/MG_nospec_${CLASS}_mt: src/MG_nospec.sac 
 	mkdir -p bin
 	$(SAC2C) -D CLASS_${CLASS}=1 -tmt_pth $(SAC2CFLAGS) $< -o$@
-	$(RM) bin/MG_mt.*
+	$(RM) bin/MG_nospec_mt.*
 
-bin/MG_stride_${CLASS}_cuda: src/MG_stride.sac $(CUDA_LPATH)/libInputMod.$(DYLIB)
+bin/MG_nospec_${CLASS}_cuda: src/MG_nospec.sac 
 	mkdir -p bin
 	$(SAC2C) -D CLASS_${CLASS}=1 -tcuda_man $(SAC2CFLAGS) $< -o$@
-	$(RM) bin/MG_stride_cuda.*
-
-bin/RNG_test: src/RNG_test.sac $(SEQ_LPATH)/libRNGMod.$(DYLIB)
-	mkdir -p bin
-	$(SAC2C) $(SAC2CFLAGS) $< -o $@
-
-bin/input_test: src/input_test.sac $(SEQ_LPATH)/libInputMod.$(DYLIB)
-	mkdir -p bin
-	$(SAC2C) $(SAC2CFLAGS) $< -o $@
+	$(RM) bin/MG_nospec_cuda.*
 
 bench: bench_seq bench_mt bench_cuda
 
 bench_seq:
-	sbatch bench_seq.sh B 10 out
+	sbatch bench_seq.sh C 10 out
 
 bench_mt:
-	sbatch bench_mt.sh B 10 out 32
+	sbatch bench_mt.sh C 10 out 32
 
 bench_cuda:
-	sbatch bench_cuda.sh B 10 out
+	sbatch bench_cuda.sh C 10 out
 
-$(SEQ_LPATH)/libInputMod.$(DYLIB): $(SEQ_LPATH)/libRNGMod.$(DYLIB)
+switch_orig: 
+	@echo "Switching to SAC2C_ORIG configuration..."
+	@sed -i 's|/home/ruben/Repos/sac2c/|/home/ruben/Repos/sacoriginal/sac2c/|g' ~/.sac2crc/sac2crc.debug.prelude ~/.sac2crc/sac2crc.release.prelude
+	@sed -i 's|/home/ruben/Repos/Stdlib/|/home/ruben/Repos/sacoriginal/Stdlib/|g' ~/.sac2crc/sac2crc.package.stdlib
 
-$(MT_LPATH)/libInputMod.$(DYLIB): $(MT_LPATH)/libRNGMod.$(DYLIB)
-
-$(CUDA_LPATH)/libInputMod.$(DYLIB): $(CUDA_LPATH)/libRNGMod.$(DYLIB)
-
+switch_new:
+	@echo "Switching to SAC2C_NEW configuration..."
+	@sed -i 's|/home/ruben/Repos/sacoriginal/sac2c/|/home/ruben/Repos/sac2c/|g' ~/.sac2crc/sac2crc.debug.prelude ~/.sac2crc/sac2crc.release.prelude
+	@sed -i 's|/home/ruben/Repos/sacoriginal/Stdlib/|/home/ruben/Repos/Stdlib/|g' ~/.sac2crc/sac2crc.package.stdlib
 
 
 $(SEQ_LPATH)/lib%Mod.$(DYLIB): src/%.sac

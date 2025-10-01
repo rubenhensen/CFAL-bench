@@ -5,7 +5,7 @@ CUDA_LPATH := host/cuda
 DYLIB := so                          # adjust to your system (e.g. so)
 
 SAC2C := /home/rhensen/sac2c/build_p/sac2c_p                  # may need to adjust if sac2c is not in your PATH
-SAC2CFLAGS := -maxwlur 27 -v3 -noSRP -noSOP -maxoptcyc 20 # when changing you may want to include -check c
+SAC2CFLAGS := -maxwlur 27 -maxlur 20 -v3 -maxoptcyc 20 # when changing you may want to include -check c
 
 all: seq test mt cuda
 

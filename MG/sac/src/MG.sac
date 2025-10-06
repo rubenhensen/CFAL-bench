@@ -51,48 +51,62 @@ use Benchmarking: all;
   #define S(z) Sb(z)
 #endif
 
+#ifdef ISINLINE
+inline
+#else
 noinline
+#endif
 double[.,.,.] gen_weights(double[4] cs)
 {
   return {iv -> cs[sum(abs(iv - [1, 1, 1]))] | iv < [3, 3, 3]};
 }
 
+#ifdef ISINLINE
+inline
+#else
 noinline
+#endif
 double[d:shp] relax(double[d:shp] x, double[d:wshp] w)
 {
   return {iv -> sum({jv -> w[jv] * x[mod(iv + jv - wshp / 2, shp)]})
              | iv < shp};
 }
 
+#ifdef ISINLINE
+inline
+#else
 noinline
+#endif
 double[.,.,.] relax_mg(double[.,.,.] x, double[4] cs)
 {
   return relax(x, gen_weights(cs));
 }
 
+#ifdef ISINLINE
+inline
+#else
 noinline
+#endif
 double[*] coarse2fine(double[*] z)
 {
   return {iv -> z[iv / 2] | iv < 2 * shape(z) step [2, 2, 2]};
 }
 
+#ifdef ISINLINE
+inline
+#else
 noinline
+#endif
 double[*] fine2coarse(double[*] r)
 {
   return {iv -> r[2 * iv] | iv < shape(r) / 2};
 }
 
-#ifdef SPECS
-specialize double[512,512,512] A(double[512,512,512] r);
-specialize double[256,256,256] A(double[256,256,256] r);
-specialize double[128,128,128] A(double[128,128,128] r);
-specialize double[64,64,64]    A(double[64,64,64] r);
-specialize double[32,32,32]    A(double[32,32,32] r);
-specialize double[16,16,16]    A(double[16,16,16] r);
-specialize double[8,8,8]       A(double[8,8,8] r);
-specialize double[4,4,4]       A(double[4,4,4] r);
-#endif
+#ifdef ISINLINE
+inline
+#else
 noinline
+#endif
 double[.,.,.] A(double[.,.,.] a)
 {
   return relax_mg(a, [-8d/3d, 0d, 1d/6d, 1d/12d]);
@@ -108,7 +122,6 @@ specialize double[8,8,8]    P(double[16,16,16] r);
 specialize double[4,4,4]       P(double[8,8,8] r);
 specialize double[2,2,2]       P(double[4,4,4] r);
 #endif
-noinline
 double[.,.,.] P(double[.,.,.] a)
 {
   return fine2coarse(relax_mg(a, [1d/2d, 1d/4d, 1d/8d, 1d/16d]));
@@ -124,22 +137,11 @@ specialize double[16,16,16]    Q(double[8,8,8] r);
 specialize double[8,8,8]       Q(double[4,4,4] r);
 specialize double[4,4,4]       Q(double[2,2,2] r);
 #endif
-noinline
 double[.,.,.] Q(double[.,.,.] a)
 {
   return relax_mg(coarse2fine (a), [1d, 1d/2d, 1d/4d, 1d/8d]);
 }
 
-#ifdef SPECS
-specialize double[512,512,512] Sa(double[512,512,512] r);
-specialize double[256,256,256] Sa(double[256,256,256] r);
-specialize double[128,128,128] Sa(double[128,128,128] r);
-specialize double[64,64,64]    Sa(double[64,64,64] r);
-specialize double[32,32,32]    Sa(double[32,32,32] r);
-specialize double[16,16,16]    Sa(double[16,16,16] r);
-specialize double[8,8,8]       Sa(double[8,8,8] r);
-specialize double[4,4,4]       Sa(double[4,4,4] r);
-#endif
 #ifdef ISINLINE
 inline
 #else
@@ -150,16 +152,6 @@ double[.,.,.] Sa(double[.,.,.] a)
   return relax_mg(a, [-3d/8d, 1d/32d, -1d/64d, 0d]);
 }
 
-#ifdef SPECS
-specialize double[512,512,512] Sb(double[512,512,512] r);
-specialize double[256,256,256] Sb(double[256,256,256] r);
-specialize double[128,128,128] Sb(double[128,128,128] r);
-specialize double[64,64,64]    Sb(double[64,64,64] r);
-specialize double[32,32,32]    Sb(double[32,32,32] r);
-specialize double[16,16,16]    Sb(double[16,16,16] r);
-specialize double[8,8,8]       Sb(double[8,8,8] r);
-specialize double[4,4,4]       Sb(double[4,4,4] r);
-#endif
 #ifdef ISINLINE
 inline
 #else
@@ -209,7 +201,11 @@ double MG(double[N,N,N] v)
   return L2(v - A(u));
 }
 
+#ifdef ISINLINE
+inline
+#else
 noinline
+#endif
 double L2 (double[.,.,.] r)
 {
   return sqrt(sum(r * r) / prod(tod(shape(r))));

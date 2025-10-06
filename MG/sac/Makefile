@@ -19,13 +19,41 @@ SPEC_VARIANTS := fullspec nospec
 INLINE_VARIANTS := inline noinline
 VARIANT_COMBINATIONS := $(foreach s,$(SPEC_VARIANTS),$(foreach i,$(INLINE_VARIANTS),$s_$i))
 
+# SLURM Configuration (set SLURM_ENABLE=1 to enable)
+SLURM_CPUS ?= 32
+SLURM_MEM ?= 0
+SLURM_ACCOUNT ?= csmpi
+SLURM_PARTITION ?= csmpi_fpga_long
+SLURM_GPU ?= nvidia_a30:1
+SLURM_TIMELIMIT ?= 00:20:00
+
+# SLURM-specific compilers (can use numactl on cluster)
+SAC2C_new_slurm := numactl --interleave all /home/rhensen/Repos/sac2c/build_p/sac2c_p
+SAC2C_orig_slurm := numactl --interleave all /home/rhensen/Repos/sacoriginal/sac2c/build_p/sac2c_p
+
+# Select compilers and execution wrapper based on SLURM mode
+ifdef SLURM_ENABLE
+  SAC2C_new := $(SAC2C_new_slurm)
+  SAC2C_orig := $(SAC2C_orig_slurm)
+  # Build srun command with SLURM options
+  RUN_PREFIX := srun --cpus-per-task=$(SLURM_CPUS) --mem=$(SLURM_MEM) --partition=$(SLURM_PARTITION) --time=$(SLURM_TIMELIMIT)
+  ifneq ($(SLURM_GPU),)
+    RUN_PREFIX += --gres=gpu:$(SLURM_GPU)
+  endif
+  ifneq ($(SLURM_ACCOUNT),)
+    RUN_PREFIX += --account=$(SLURM_ACCOUNT)
+  endif
+else
+  RUN_PREFIX :=
+endif
+
 # Build settings
-TARGET ?= cuda_man
-MT_CORES ?= 4
+TARGET ?= mt_pth
+MT_CORES ?= 32
 CLASS ?= S
 RUNS := 20
 SOURCE := src/MG.sac
-SAC2CFLAGS := -maxwlur 27 -v0 -noSOP -noSRP -maxoptcyc 20 -maxspec 100
+SAC2CFLAGS := -maxwlur 27 -v0 -noSOP -noSRP -maxoptcyc 30 -maxspec 100
 PYTHON := venv/bin/python3
 
 # Create sanitized flag string for filenames (remove - and spaces)
@@ -132,7 +160,7 @@ define RAW_template
 out/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3).raw: bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3)
 	@echo "=== Running benchmark: $(1)_$(2) with $(3) compiler ==="
 	@mkdir -p out
-	@i=1; while [ $$$$i -le $$(RUNS) ]; do bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)); i=$$$$((i+1)); done > $$@
+	@i=1; while [ $$$$i -le $$(RUNS) ]; do $$(RUN_PREFIX) bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)); i=$$$$((i+1)); done > $$@
 endef
 
 $(foreach s,$(SPEC_VARIANTS),$(foreach i,$(INLINE_VARIANTS),$(foreach c,$(COMPILERS),$(eval $(call RAW_template,$s,$i,$c)))))

@@ -52,7 +52,7 @@ else
 endif
 
 # Build settings
-TARGET ?= cuda_man
+TARGET ?= mt_pth
 MT_CORES ?= 32
 CLASS ?= S
 RUNS := 20

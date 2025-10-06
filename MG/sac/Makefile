@@ -39,16 +39,19 @@ ifdef SLURM_ENABLE
   # SLURM uses different base path for sac2crc configuration
   SAC2C_BASE_PATH := /home/rhensen
   # Build sbatch command with SLURM options
-  RUN_PREFIX := sbatch --wait --cpus-per-task=$(SLURM_CPUS) --mem=$(SLURM_MEM) --partition=$(SLURM_PARTITION) --time=$(SLURM_TIMELIMIT)
+  SBATCH_BASE := sbatch --cpus-per-task=$(SLURM_CPUS) --mem=$(SLURM_MEM) --partition=$(SLURM_PARTITION) --time=$(SLURM_TIMELIMIT)
   ifneq ($(SLURM_GPU),)
-    RUN_PREFIX += --gres=gpu:$(SLURM_GPU)
+    SBATCH_BASE += --gres=gpu:$(SLURM_GPU)
   endif
   ifneq ($(SLURM_ACCOUNT),)
-    RUN_PREFIX += --account=$(SLURM_ACCOUNT)
+    SBATCH_BASE += --account=$(SLURM_ACCOUNT)
   endif
-  RUN_PREFIX += --wrap
+  # Build prefix waits for completion, run prefix does not
+  BUILD_PREFIX := $(SBATCH_BASE) --wait --wrap
+  RUN_PREFIX := $(SBATCH_BASE) --wrap
 else
   SAC2C_BASE_PATH := /home/ruben/Repos
+  BUILD_PREFIX :=
   RUN_PREFIX :=
 endif
 
@@ -189,7 +192,7 @@ bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3): $$(SOURCE)
 	@echo "Switching to SAC2C_$(3) configuration..."
 	@sed -i 's|$$(SAC2C_BASE_PATH)/$(if $(filter orig,$(3)),sac2c,sacoriginal/sac2c)/|$$(SAC2C_BASE_PATH)/$(if $(filter orig,$(3)),sacoriginal/sac2c,sac2c)/|g' $$(SAC2CRC_DIRS)
 	@sed -i 's|$$(SAC2C_BASE_PATH)/$(if $(filter orig,$(3)),Stdlib,sacoriginal/Stdlib)/|$$(SAC2C_BASE_PATH)/$(if $(filter orig,$(3)),sacoriginal/Stdlib,Stdlib)/|g' $$(SAC2CRC_PKG)
-	$$(SAC2C_$(3)) -DCLASS_$$(CLASS)=1 $(if $(filter fullspec,$(1)),-DSPECS) $(if $(filter inline,$(2)),-DISINLINE) $$(TARGET_FLAG_$$(TARGET)) $$(SAC2CFLAGS) $$< -o$$@
+	$$(BUILD_PREFIX) "$$(SAC2C_$(3)) -DCLASS_$$(CLASS)=1 $(if $(filter fullspec,$(1)),-DSPECS) $(if $(filter inline,$(2)),-DISINLINE) $$(TARGET_FLAG_$$(TARGET)) $$(SAC2CFLAGS) $$< -o$$@"
 endef
 
 $(foreach s,$(SPEC_VARIANTS),$(foreach i,$(INLINE_VARIANTS),$(foreach c,$(COMPILERS),$(eval $(call BUILD_template,$s,$i,$c)))))

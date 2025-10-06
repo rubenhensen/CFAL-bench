@@ -28,13 +28,14 @@ SLURM_GPU ?= 0 #nvidia_a30:1
 SLURM_TIMELIMIT ?= 00:20:00
 
 # SLURM-specific compilers (can use numactl on cluster)
-SAC2C_new_slurm := numactl --interleave all /home/rhensen/Repos/sac2c/build_p/sac2c_p
-SAC2C_orig_slurm := numactl --interleave all /home/rhensen/Repos/sacoriginal/sac2c/build_p/sac2c_p
+SAC2C_new_slurm := numactl --interleave all /home/rhensen/sac2c/build_p/sac2c_p
+SAC2C_orig_slurm := numactl --interleave all /home/rhensen/sacoriginal/sac2c/build_p/sac2c_p
 
 # Select compilers and execution wrapper based on SLURM mode
 ifdef SLURM_ENABLE
   SAC2C_new := $(SAC2C_new_slurm)
   SAC2C_orig := $(SAC2C_orig_slurm)
+  SAC2CFLAGS := $(SAC2CFLAGS_slurm)
   # Build srun command with SLURM options
   RUN_PREFIX := srun --cpus-per-task=$(SLURM_CPUS) --mem=$(SLURM_MEM) --partition=$(SLURM_PARTITION) --time=$(SLURM_TIMELIMIT)
   ifneq ($(SLURM_GPU),)
@@ -54,6 +55,7 @@ CLASS ?= S
 RUNS := 20
 SOURCE := src/MG.sac
 SAC2CFLAGS := -maxwlur 27 -v0 -noSOP -noSRP -maxoptcyc 30 -maxspec 100
+SAC2CFLAGS_slurm ?= $(SAC2CFLAGS) -mt_bind NUMA
 PYTHON := venv/bin/python3
 
 # Create sanitized flag string for filenames (remove - and spaces)

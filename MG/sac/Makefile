@@ -21,10 +21,10 @@ VARIANT_COMBINATIONS := $(foreach s,$(SPEC_VARIANTS),$(foreach i,$(INLINE_VARIAN
 
 # SLURM Configuration (set SLURM_ENABLE=1 to enable)
 SLURM_CPUS ?= 32
-SLURM_MEM ?= 0
+SLURM_MEM ?= 60G
 SLURM_ACCOUNT ?= csmpi
 SLURM_PARTITION ?= csmpi_fpga_long
-SLURM_GPU ?= nvidia_a30:1
+SLURM_GPU ?= 0 #nvidia_a30:1
 SLURM_TIMELIMIT ?= 00:20:00
 
 # SLURM-specific compilers (can use numactl on cluster)

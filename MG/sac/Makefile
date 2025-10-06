@@ -36,6 +36,8 @@ ifdef SLURM_ENABLE
   SAC2C_new := $(SAC2C_new_slurm)
   SAC2C_orig := $(SAC2C_orig_slurm)
   SAC2CFLAGS := $(SAC2CFLAGS_slurm)
+  # SLURM uses different base path for sac2crc configuration
+  SAC2C_BASE_PATH := /home/rhensen
   # Build srun command with SLURM options
   RUN_PREFIX := srun --cpus-per-task=$(SLURM_CPUS) --mem=$(SLURM_MEM) --partition=$(SLURM_PARTITION) --time=$(SLURM_TIMELIMIT)
   ifneq ($(SLURM_GPU),)
@@ -45,6 +47,7 @@ ifdef SLURM_ENABLE
     RUN_PREFIX += --account=$(SLURM_ACCOUNT)
   endif
 else
+  SAC2C_BASE_PATH := /home/ruben/Repos
   RUN_PREFIX :=
 endif
 
@@ -183,8 +186,8 @@ define BUILD_template
 bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3): $$(SOURCE)
 	@mkdir -p bin
 	@echo "Switching to SAC2C_$(3) configuration..."
-	@sed -i 's|/home/ruben/Repos/$(if $(filter orig,$(3)),sac2c,sacoriginal/sac2c)/|/home/ruben/Repos/$(if $(filter orig,$(3)),sacoriginal/sac2c,sac2c)/|g' $$(SAC2CRC_DIRS)
-	@sed -i 's|/home/ruben/Repos/$(if $(filter orig,$(3)),Stdlib,sacoriginal/Stdlib)/|/home/ruben/Repos/$(if $(filter orig,$(3)),sacoriginal/Stdlib,Stdlib)/|g' $$(SAC2CRC_PKG)
+	@sed -i 's|$$(SAC2C_BASE_PATH)/$(if $(filter orig,$(3)),sac2c,sacoriginal/sac2c)/|$$(SAC2C_BASE_PATH)/$(if $(filter orig,$(3)),sacoriginal/sac2c,sac2c)/|g' $$(SAC2CRC_DIRS)
+	@sed -i 's|$$(SAC2C_BASE_PATH)/$(if $(filter orig,$(3)),Stdlib,sacoriginal/Stdlib)/|$$(SAC2C_BASE_PATH)/$(if $(filter orig,$(3)),sacoriginal/Stdlib,Stdlib)/|g' $$(SAC2CRC_PKG)
 	$$(SAC2C_$(3)) -DCLASS_$$(CLASS)=1 $(if $(filter fullspec,$(1)),-DSPECS) $(if $(filter inline,$(2)),-DISINLINE) $$(TARGET_FLAG_$$(TARGET)) $$(SAC2CFLAGS) $$< -o$$@
 endef
 

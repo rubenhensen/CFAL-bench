@@ -38,14 +38,15 @@ ifdef SLURM_ENABLE
   SAC2CFLAGS := $(SAC2CFLAGS_slurm)
   # SLURM uses different base path for sac2crc configuration
   SAC2C_BASE_PATH := /home/rhensen
-  # Build srun command with SLURM options
-  RUN_PREFIX := srun --cpus-per-task=$(SLURM_CPUS) --mem=$(SLURM_MEM) --partition=$(SLURM_PARTITION) --time=$(SLURM_TIMELIMIT)
+  # Build sbatch command with SLURM options
+  RUN_PREFIX := sbatch --wait --cpus-per-task=$(SLURM_CPUS) --mem=$(SLURM_MEM) --partition=$(SLURM_PARTITION) --time=$(SLURM_TIMELIMIT)
   ifneq ($(SLURM_GPU),)
     RUN_PREFIX += --gres=gpu:$(SLURM_GPU)
   endif
   ifneq ($(SLURM_ACCOUNT),)
     RUN_PREFIX += --account=$(SLURM_ACCOUNT)
   endif
+  RUN_PREFIX += --wrap
 else
   SAC2C_BASE_PATH := /home/ruben/Repos
   RUN_PREFIX :=
@@ -165,7 +166,7 @@ define RAW_template
 out/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3).raw: bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3)
 	@echo "=== Running benchmark: $(1)_$(2) with $(3) compiler ==="
 	@mkdir -p out
-	@i=1; while [ $$$$i -le $$(RUNS) ]; do $$(RUN_PREFIX) bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)); i=$$$$((i+1)); done > $$@
+	@i=1; while [ $$$$i -le $$(RUNS) ]; do $$(RUN_PREFIX) "bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET))"; i=$$$$((i+1)); done > $$@
 endef
 
 $(foreach s,$(SPEC_VARIANTS),$(foreach i,$(INLINE_VARIANTS),$(foreach c,$(COMPILERS),$(eval $(call RAW_template,$s,$i,$c)))))

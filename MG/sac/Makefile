@@ -1,83 +1,183 @@
-SEQ_LPATH  := host/seq
-MT_LPATH   := host/mt-pth
-CUDA_LPATH := host/cuda
 
-DYLIB := so                          # adjust to your system (e.g. so)
+# MG Benchmark Makefile
+# Builds and benchmarks MG with all combinations of:
+#   - 2 compilers: new, orig
+#   - 2 specialization modes: fullspec (-DSPECS), nospec
+#   - 2 inlining modes: inline (-DISINLINE), noinline
+#   - 3 build targets: seq, mt_pth, cuda_man
+#
+# Statistical analysis:
+#   - Performs Student's t-test comparing new vs orig compiler (95% confidence)
+#   - Outputs: T-statistic, p-value, significance, means, speedup, winner (TIE if not significant)
+#   - Requires: make venv (sets up Python with scipy/numpy)
 
-SAC2C := /home/rhensen/sac2c/build_p/sac2c_p                  # may need to adjust if sac2c is not in your PATH
-SAC2CFLAGS := -maxwlur 27 -maxlur 20 -v3 -maxoptcyc 20 # when changing you may want to include -check c
+# Configuration
+COMPILERS := new orig
+SAC2C_new := /home/ruben/Repos/sac2c/build_p/sac2c_p
+SAC2C_orig := /home/ruben/Repos/sacoriginal/sac2c/build_p/sac2c_p
+SPEC_VARIANTS := fullspec nospec
+INLINE_VARIANTS := inline noinline
+VARIANT_COMBINATIONS := $(foreach s,$(SPEC_VARIANTS),$(foreach i,$(INLINE_VARIANTS),$s_$i))
 
-all: seq test mt cuda
+# Build settings
+TARGET ?= cuda_man
+MT_CORES ?= 4
+CLASS ?= S
+RUNS := 20
+SOURCE := src/MG.sac
+SAC2CFLAGS := -maxwlur 27 -v0 -noSOP -noSRP -maxoptcyc 20 -maxspec 100
+PYTHON := venv/bin/python3
 
-seq: | bin/MG_fullspec_${CLASS}_seq bin/MG_nospec_${CLASS}_seq
+# Create sanitized flag string for filenames (remove - and spaces)
+empty :=
+space := $(empty) $(empty)
+FLAGS_HASH := $(subst $(space),_,$(subst -,,$(SAC2CFLAGS)))
 
-mt: | bin/MG_fullspec_${CLASS}_mt bin/MG_nospec_${CLASS}_mt
+# Target-specific flags
+TARGET_FLAG_seq :=
+TARGET_FLAG_mt_pth := -tmt_pth
+TARGET_FLAG_cuda_man := -tcuda_man -nomemrt
+TARGET_RUNTIME_seq :=
+TARGET_RUNTIME_mt_pth := -mt $(MT_CORES)
+TARGET_RUNTIME_cuda_man :=
 
-cuda: | bin/MG_fullspec_${CLASS}_cuda bin/MG_nospec_${CLASS}_cuda 
-cuda: SAC2CFLAGS += -nomemrt
+all: build
 
-bin/MG_fullspec_${CLASS}_seq: src/MG_fullspec.sac 
-	mkdir -p bin
-	$(SAC2C) -D CLASS_${CLASS}=1 $(SAC2CFLAGS) $< -o$@
-	$(RM) bin/MG_fullspec_seq.*
+# Setup Python virtual environment for statistical analysis
+venv: venv/bin/activate
 
-bin/MG_fullspec_${CLASS}_mt: src/MG_fullspec.sac 
-	mkdir -p bin
-	$(SAC2C) -D CLASS_${CLASS}=1 -tmt_pth $(SAC2CFLAGS) $< -o$@
-	$(RM) bin/MG_fullspec_mt.*
+venv/bin/activate:
+	python3 -m venv venv
+	venv/bin/pip install scipy numpy
+	@echo "Virtual environment created. Run 'make benchmark' to use it."
 
-bin/MG_fullspec_${CLASS}_cuda: src/MG_fullspec.sac 
-	mkdir -p bin
-	$(SAC2C) -D CLASS_${CLASS}=1 -tcuda_man $(SAC2CFLAGS) $< -o$@
-	$(RM) bin/MG_fullspec_cuda.*
+S A B C D:
+	@$(MAKE) CLASS=$@ benchmark
 
-bin/MG_nospec_${CLASS}_seq: src/MG_nospec.sac 
-	mkdir -p bin
-	$(SAC2C) -D CLASS_${CLASS}=1 $(SAC2CFLAGS) $< -o$@
-	$(RM) bin/MG_nospec_seq.*
+build: build_new build_orig
 
-bin/MG_nospec_${CLASS}_mt: src/MG_nospec.sac 
-	mkdir -p bin
-	$(SAC2C) -D CLASS_${CLASS}=1 -tmt_pth $(SAC2CFLAGS) $< -o$@
-	$(RM) bin/MG_nospec_mt.*
+# Run benchmarks - only if .raw files don't exist
+benchmark: benchmark_new benchmark_orig comparison
 
-bin/MG_nospec_${CLASS}_cuda: src/MG_nospec.sac 
-	mkdir -p bin
-	$(SAC2C) -D CLASS_${CLASS}=1 -tcuda_man $(SAC2CFLAGS) $< -o$@
-	$(RM) bin/MG_nospec_cuda.*
+benchmark_new: out/MG_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_new.csv
 
-bench: bench_seq bench_mt bench_cuda
+benchmark_orig: out/MG_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_orig.csv
 
-bench_seq:
-	sbatch bench_seq.sh C 10 out
+# Comparison target - generates comparison file (depends on .raw files)
+comparison: out/MG_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_comparison.csv
+	@cat out/MG_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_comparison.csv
 
-bench_mt:
-	sbatch bench_mt.sh C 10 out 32
+# Comparison file target - only regenerates if .raw files are newer
+out/MG_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_comparison.csv: $(foreach v,$(VARIANT_COMBINATIONS),out/MG_$(v)_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_new.raw out/MG_$(v)_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_orig.raw)
+	@echo "=== Running statistical comparison (95% confidence) ==="
+	@printf 'Variant,T-statistic,P-value,Significant(95%%),Mean_new(GFLOP/s),Mean_orig(GFLOP/s),Speedup,Winner\n' > out/MG_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_comparison.csv
+	@for v in $(VARIANT_COMBINATIONS); do \
+		$(PYTHON) -c "import scipy.stats as stats; import numpy as np; \
+		new = np.loadtxt('out/MG_$${v}_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_new.raw'); \
+		orig = np.loadtxt('out/MG_$${v}_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_orig.raw'); \
+		t_stat, p_val = stats.ttest_ind(new, orig); \
+		sig = 'YES' if p_val < 0.05 else 'NO'; \
+		speedup = new.mean() / orig.mean(); \
+		winner = 'TIE' if p_val >= 0.05 else ('NEW' if new.mean() > orig.mean() else 'ORIG'); \
+		print(f'$$v,{t_stat:.4f},{p_val:.6f},{sig},{new.mean():.6f},{orig.mean():.6f},{speedup:.4f},{winner}')" >> out/MG_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_comparison.csv || echo "$$v,ERROR,,,,,," >> out/MG_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_comparison.csv; \
+	done
+	@echo ""
+	@echo "=== Cross-comparison: nospec_new vs fullspec_orig ==="
+	@printf '\nCross-comparison: nospec_new vs fullspec_orig\n' >> out/MG_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_comparison.csv
+	@printf 'Variant,T-statistic,P-value,Significant(95%%),Mean_nospec_new(GFLOP/s),Mean_fullspec_orig(GFLOP/s),Speedup,Winner\n' >> out/MG_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_comparison.csv
+	@for inline_v in inline noinline; do \
+		$(PYTHON) -c "import scipy.stats as stats; import numpy as np; \
+		new = np.loadtxt('out/MG_nospec_$${inline_v}_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_new.raw'); \
+		orig = np.loadtxt('out/MG_fullspec_$${inline_v}_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_orig.raw'); \
+		t_stat, p_val = stats.ttest_ind(new, orig); \
+		sig = 'YES' if p_val < 0.05 else 'NO'; \
+		speedup = new.mean() / orig.mean(); \
+		winner = 'TIE' if p_val >= 0.05 else ('NEW' if new.mean() > orig.mean() else 'ORIG'); \
+		print(f'$${inline_v},{t_stat:.4f},{p_val:.6f},{sig},{new.mean():.6f},{orig.mean():.6f},{speedup:.4f},{winner}')" >> out/MG_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_comparison.csv || echo "$${inline_v},ERROR,,,,,," >> out/MG_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_comparison.csv; \
+	done
+	@echo ""
+	@echo "=== Inline vs Noinline comparison (same compiler/spec) ==="
+	@printf '\nInline vs Noinline comparison (same compiler/spec)\n' >> out/MG_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_comparison.csv
+	@printf 'Compiler_Spec,T-statistic,P-value,Significant(95%%),Mean_inline(GFLOP/s),Mean_noinline(GFLOP/s),Speedup,Winner\n' >> out/MG_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_comparison.csv
+	@for c in $(COMPILERS); do \
+		for s in $(SPEC_VARIANTS); do \
+			$(PYTHON) -c "import scipy.stats as stats; import numpy as np; \
+			inline = np.loadtxt('out/MG_$${s}_inline_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_$${c}.raw'); \
+			noinline = np.loadtxt('out/MG_$${s}_noinline_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_$${c}.raw'); \
+			t_stat, p_val = stats.ttest_ind(inline, noinline); \
+			sig = 'YES' if p_val < 0.05 else 'NO'; \
+			speedup = inline.mean() / noinline.mean(); \
+			winner = 'TIE' if p_val >= 0.05 else ('INLINE' if inline.mean() > noinline.mean() else 'NOINLINE'); \
+			print(f'$${c}_$${s},{t_stat:.4f},{p_val:.6f},{sig},{inline.mean():.6f},{noinline.mean():.6f},{speedup:.4f},{winner}')" >> out/MG_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_comparison.csv || echo "$${c}_$${s},ERROR,,,,,," >> out/MG_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_comparison.csv; \
+		done; \
+	done
+	@echo "Comparison saved to out/MG_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_comparison.csv"
 
-bench_cuda:
-	sbatch bench_cuda.sh C 10 out
+# Generate CSV from raw files for each compiler
+define BENCHMARK_CSV_template
+out/MG_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(1).csv: $$(foreach v,$$(VARIANT_COMBINATIONS),out/MG_$$v_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(1).raw)
+	@echo "=== Generating CSV for $(1) compiler ==="
+	@mkdir -p out
+	@printf 'Binary,Class,Type,Mean,StdDev\n' > $$@
+	@for v in $$(VARIANT_COMBINATIONS); do \
+		printf 'sac2c_$(1)_'$$$$v',$$(CLASS),$$(TARGET),' >> $$@; \
+		cat out/MG_$$$${v}_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(1).raw | variance >> $$@; \
+	done
+endef
 
-switch_orig: 
-	@echo "Switching to SAC2C_ORIG configuration..."
-	@sed -i 's|/home/rhensen/sac2c/|/home/rhensen/sacoriginal/sac2c/|g' ~/.sac2crc/sac2crc.debug.prelude ~/.sac2crc/sac2crc.release.prelude
-	@sed -i 's|/home/rhensen/Stdlib/|/home/rhensen/sacoriginal/Stdlib/|g' ~/.sac2crc/sac2crc.package.stdlib
+$(foreach c,$(COMPILERS),$(eval $(call BENCHMARK_CSV_template,$(c))))
 
-switch_new:
-	@echo "Switching to SAC2C_NEW configuration..."
-	@sed -i 's|/home/rhensen/sacoriginal/sac2c/|/home/rhensen/sac2c/|g' ~/.sac2crc/sac2crc.debug.prelude ~/.sac2crc/sac2crc.release.prelude
-	@sed -i 's|/home/rhensen/sacoriginal/Stdlib/|/home/rhensen/Stdlib/|g' ~/.sac2crc/sac2crc.package.stdlib
+# Run actual benchmarks to generate .raw files
+define RAW_template
+out/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3).raw: bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3)
+	@echo "=== Running benchmark: $(1)_$(2) with $(3) compiler ==="
+	@mkdir -p out
+	@i=1; while [ $$$$i -le $$(RUNS) ]; do bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)); i=$$$$((i+1)); done > $$@
+endef
 
+$(foreach s,$(SPEC_VARIANTS),$(foreach i,$(INLINE_VARIANTS),$(foreach c,$(COMPILERS),$(eval $(call RAW_template,$s,$i,$c)))))
 
-$(SEQ_LPATH)/lib%Mod.$(DYLIB): src/%.sac
-	$(SAC2C) $(SAC_FLAGS) $<
+# Generate build targets for each compiler
+define BUILD_TARGETS
+build_$(1): $$(foreach v,$$(VARIANT_COMBINATIONS),bin/MG_$$v_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(1))
+endef
 
-$(MT_LPATH)/lib%Mod.$(DYLIB): src/%.sac
-	$(SAC2C) $(SAC_FLAGS) -tmt_pth $<
+$(foreach c,$(COMPILERS),$(eval $(call BUILD_TARGETS,$(c))))
 
-$(CUDA_LPATH)/lib%Mod.$(DYLIB): src/%.sac
-	$(SAC2C) $(SAC_FLAGS) -tcuda_man $<
+# Config files for compiler switching
+SAC2CRC_DIRS := ~/.sac2crc/sac2crc.debug.prelude ~/.sac2crc/sac2crc.release.prelude
+SAC2CRC_PKG := ~/.sac2crc/sac2crc.package.stdlib
 
+# Pattern rule for building binaries
+define BUILD_template
+bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3): $$(SOURCE)
+	@mkdir -p bin
+	@echo "Switching to SAC2C_$(3) configuration..."
+	@sed -i 's|/home/ruben/Repos/$(if $(filter orig,$(3)),sac2c,sacoriginal/sac2c)/|/home/ruben/Repos/$(if $(filter orig,$(3)),sacoriginal/sac2c,sac2c)/|g' $$(SAC2CRC_DIRS)
+	@sed -i 's|/home/ruben/Repos/$(if $(filter orig,$(3)),Stdlib,sacoriginal/Stdlib)/|/home/ruben/Repos/$(if $(filter orig,$(3)),sacoriginal/Stdlib,Stdlib)/|g' $$(SAC2CRC_PKG)
+	$$(SAC2C_$(3)) -DCLASS_$$(CLASS)=1 $(if $(filter fullspec,$(1)),-DSPECS) $(if $(filter inline,$(2)),-DISINLINE) $$(TARGET_FLAG_$$(TARGET)) $$(SAC2CFLAGS) $$< -o$$@
+endef
+
+$(foreach s,$(SPEC_VARIANTS),$(foreach i,$(INLINE_VARIANTS),$(foreach c,$(COMPILERS),$(eval $(call BUILD_template,$s,$i,$c)))))
+
+# Test all combinations
+test:
+	@$(MAKE) CLASS=S TARGET=mt_pth build_new build_orig
+	@echo "=== Testing all combinations ==="
+	@for c in $(COMPILERS); do \
+		echo "Testing $$c compiler:"; \
+		for v in $(VARIANT_COMBINATIONS); do \
+			echo "  $$v..."; \
+			bin/MG_$${v}_S_mt_pth_$(FLAGS_HASH)_$$c -mt 2 > /dev/null || exit 1; \
+		done; \
+	done
+	@echo "All tests passed!"
 
 clean:
 	$(RM) bin/*
-	$(RM) -rf host tree
+	$(RM) -rf out
+
+distclean: clean
+	$(RM) -rf venv
+
+.PHONY: all benchmark benchmark_new benchmark_orig comparison build build_new build_orig test clean distclean venv S A B C D

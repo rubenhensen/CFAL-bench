@@ -39,20 +39,15 @@ ifdef SLURM_ENABLE
   # SLURM uses different base path for sac2crc configuration
   SAC2C_BASE_PATH := /home/rhensen
   # Build sbatch command with SLURM options
-  SBATCH_BASE := sbatch --cpus-per-task=$(SLURM_CPUS) --mem=$(SLURM_MEM) --partition=$(SLURM_PARTITION) --time=$(SLURM_TIMELIMIT)
+  SBATCH_BASE := sbatch --parsable --cpus-per-task=$(SLURM_CPUS) --mem=$(SLURM_MEM) --partition=$(SLURM_PARTITION) --time=$(SLURM_TIMELIMIT)
   ifneq ($(SLURM_GPU),)
     SBATCH_BASE += --gres=gpu:$(SLURM_GPU)
   endif
   ifneq ($(SLURM_ACCOUNT),)
     SBATCH_BASE += --account=$(SLURM_ACCOUNT)
   endif
-  # Build prefix waits for completion, run prefix does not
-  BUILD_PREFIX := $(SBATCH_BASE) --wait --wrap
-  RUN_PREFIX := $(SBATCH_BASE) --wrap
 else
   SAC2C_BASE_PATH := /home/ruben/Repos
-  BUILD_PREFIX :=
-  RUN_PREFIX :=
 endif
 
 # Build settings
@@ -104,8 +99,24 @@ benchmark_orig: out/MG_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_orig.csv
 comparison: out/MG_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_comparison.csv
 	@cat out/MG_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_comparison.csv
 
+# Wait for all SLURM jobs to complete
+sync:
+ifdef SLURM_ENABLE
+	@echo "=== Waiting for all SLURM jobs to complete ==="
+	@for jobfile in out/*.raw.jobid; do \
+		if [ -f "$$jobfile" ]; then \
+			jobid=$$(cat "$$jobfile"); \
+			echo "Waiting for job $$jobid..."; \
+			while scontrol show job $$jobid 2>/dev/null | grep -q "JobState=PENDING\|JobState=RUNNING"; do \
+				sleep 5; \
+			done; \
+		fi; \
+	done
+	@echo "All jobs completed"
+endif
+
 # Comparison file target - only regenerates if .raw files are newer
-out/MG_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_comparison.csv: $(foreach v,$(VARIANT_COMBINATIONS),out/MG_$(v)_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_new.raw out/MG_$(v)_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_orig.raw)
+out/MG_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_comparison.csv: $(foreach v,$(VARIANT_COMBINATIONS),out/MG_$(v)_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_new.raw out/MG_$(v)_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_orig.raw) sync
 	@echo "=== Running statistical comparison (95% confidence) ==="
 	@printf 'Variant,T-statistic,P-value,Significant(95%%),Mean_new(GFLOP/s),Mean_orig(GFLOP/s),Speedup,Winner\n' > out/MG_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_comparison.csv
 	@for v in $(VARIANT_COMBINATIONS); do \
@@ -169,7 +180,19 @@ define RAW_template
 out/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3).raw: bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3)
 	@echo "=== Running benchmark: $(1)_$(2) with $(3) compiler ==="
 	@mkdir -p out
-	@i=1; while [ $$$$i -le $$(RUNS) ]; do $$(RUN_PREFIX) "bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET))"; i=$$$$((i+1)); done > $$@
+ifdef SLURM_ENABLE
+	@if [ -f bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3).jobid ]; then \
+		BUILD_JOB=$$$$(cat bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3).jobid); \
+		echo "Submitting benchmark with dependency on build job $$$$BUILD_JOB..."; \
+		$$(SBATCH_BASE) --dependency=afterok:$$$$BUILD_JOB --wrap "for i in \$$$$(seq 1 $$(RUNS)); do bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)); done" --output=$$@ > $$@.jobid; \
+		echo "Benchmark job ID: $$$$(cat $$@.jobid) submitted"; \
+	else \
+		echo "Error: Build job ID not found"; \
+		exit 1; \
+	fi
+else
+	@i=1; while [ $$$$i -le $$(RUNS) ]; do bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)); i=$$$$((i+1)); done > $$@
+endif
 endef
 
 $(foreach s,$(SPEC_VARIANTS),$(foreach i,$(INLINE_VARIANTS),$(foreach c,$(COMPILERS),$(eval $(call RAW_template,$s,$i,$c)))))
@@ -192,7 +215,13 @@ bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3): $$(SOURCE)
 	@echo "Switching to SAC2C_$(3) configuration..."
 	@sed -i 's|$$(SAC2C_BASE_PATH)/$(if $(filter orig,$(3)),sac2c,sacoriginal/sac2c)/|$$(SAC2C_BASE_PATH)/$(if $(filter orig,$(3)),sacoriginal/sac2c,sac2c)/|g' $$(SAC2CRC_DIRS)
 	@sed -i 's|$$(SAC2C_BASE_PATH)/$(if $(filter orig,$(3)),Stdlib,sacoriginal/Stdlib)/|$$(SAC2C_BASE_PATH)/$(if $(filter orig,$(3)),sacoriginal/Stdlib,Stdlib)/|g' $$(SAC2CRC_PKG)
-	$$(BUILD_PREFIX) "$$(SAC2C_$(3)) -DCLASS_$$(CLASS)=1 $(if $(filter fullspec,$(1)),-DSPECS) $(if $(filter inline,$(2)),-DISINLINE) $$(TARGET_FLAG_$$(TARGET)) $$(SAC2CFLAGS) $$< -o$$@"
+ifdef SLURM_ENABLE
+	@echo "Submitting build job for $(1)_$(2)_$(3)..."
+	@$$(SBATCH_BASE) --wrap "$$(SAC2C_$(3)) -DCLASS_$$(CLASS)=1 $(if $(filter fullspec,$(1)),-DSPECS) $(if $(filter inline,$(2)),-DISINLINE) $$(TARGET_FLAG_$$(TARGET)) $$(SAC2CFLAGS) $$< -o$$@" > $$@.jobid
+	@echo "Build job ID: $$$$(cat $$@.jobid) submitted"
+else
+	$$(SAC2C_$(3)) -DCLASS_$$(CLASS)=1 $(if $(filter fullspec,$(1)),-DSPECS) $(if $(filter inline,$(2)),-DISINLINE) $$(TARGET_FLAG_$$(TARGET)) $$(SAC2CFLAGS) $$< -o$$@
+endif
 endef
 
 $(foreach s,$(SPEC_VARIANTS),$(foreach i,$(INLINE_VARIANTS),$(foreach c,$(COMPILERS),$(eval $(call BUILD_template,$s,$i,$c)))))
@@ -217,4 +246,4 @@ clean:
 distclean: clean
 	$(RM) -rf venv
 
-.PHONY: all benchmark benchmark_new benchmark_orig comparison build build_new build_orig test clean distclean venv S A B C D
+.PHONY: all benchmark benchmark_new benchmark_orig comparison build build_new build_orig sync test clean distclean venv S A B C D

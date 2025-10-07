@@ -32,8 +32,8 @@ SLURM_TIMELIMIT ?= 00:20:00
 # SLURM-specific compilers and configs (can use numactl on cluster)
 SAC2C_new_slurm := numactl --interleave all /home/rhensen/sac2c/build_p/sac2c_p
 SAC2C_orig_slurm := numactl --interleave all /home/rhensen/sacoriginal/sac2c/build_p/sac2c_p
-SAC2CRC_new_slurm := ~/.sac2crc_new_slurm
-SAC2CRC_orig_slurm := ~/.sac2crc_orig_slurm
+SAC2CRC_new_slurm := /home/rhensen/.sac2crc_new_slurm
+SAC2CRC_orig_slurm := /home/rhensen/.sac2crc_orig_slurm
 
 # Select compilers and execution wrapper based on SLURM mode
 ifdef SLURM_ENABLE

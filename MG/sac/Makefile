@@ -195,11 +195,11 @@ ifdef SLURM_ENABLE
 	@if [ -f bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3).jobid ]; then \
 		BUILD_JOB=$$$$(cat bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3).jobid); \
 		echo "Submitting benchmark with dependency on build job $$$$BUILD_JOB..."; \
-		$$(SBATCH_BASE) --dependency=afterok:$$$$BUILD_JOB --kill-on-invalid-dep=yes --output=$$(SLURM_LOGS)/bench_$(1)_$(2)_$(3)_%j.out --error=$$(SLURM_LOGS)/bench_$(1)_$(2)_$(3)_%j.err --wrap "echo "bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET))"; for i in \$$$$(seq 1 $$(RUNS)); do bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)); done > $$@" > $$@.jobid; \
+		$$(SBATCH_BASE) --dependency=afterok:$$$$BUILD_JOB --kill-on-invalid-dep=yes --output=$$(SLURM_LOGS)/bench_$(1)_$(2)_$(3)_%j.out --error=$$(SLURM_LOGS)/bench_$(1)_$(2)_$(3)_%j.err --wrap "echo 'Running benchmark command: bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET))' && for i in \$$$$(seq 1 $$(RUNS)); do bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)); done > $$@" > $$@.jobid; \
 		echo "Benchmark job ID: $$$$(cat $$@.jobid) submitted"; \
 	else \
 		echo "Binary exists but no build job ID found - submitting benchmark without dependency..."; \
-		$$(SBATCH_BASE) --output=$$(SLURM_LOGS)/bench_$(1)_$(2)_$(3)_%j.out --error=$$(SLURM_LOGS)/bench_$(1)_$(2)_$(3)_%j.err --wrap "for i in \$$$$(seq 1 $$(RUNS)); do bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)); done > $$@" > $$@.jobid; \
+		$$(SBATCH_BASE) --output=$$(SLURM_LOGS)/bench_$(1)_$(2)_$(3)_%j.out --error=$$(SLURM_LOGS)/bench_$(1)_$(2)_$(3)_%j.err --wrap "echo 'Running benchmark command: bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET))' && for i in \$$$$(seq 1 $$(RUNS)); do bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)); done > $$@" > $$@.jobid; \
 		echo "Benchmark job ID: $$$$(cat $$@.jobid) submitted"; \
 	fi
 else

@@ -15,6 +15,8 @@
 COMPILERS := new orig
 SAC2C_new := /home/ruben/Repos/sac2c/build_p/sac2c_p
 SAC2C_orig := /home/ruben/Repos/sacoriginal/sac2c/build_p/sac2c_p
+SAC2CRC_new := ~/.sac2crc_new
+SAC2CRC_orig := ~/.sac2crc_orig
 SPEC_VARIANTS := fullspec nospec
 INLINE_VARIANTS := inline noinline
 VARIANT_COMBINATIONS := $(foreach s,$(SPEC_VARIANTS),$(foreach i,$(INLINE_VARIANTS),$s_$i))
@@ -27,17 +29,19 @@ SLURM_PARTITION ?= csmpi_fpga_long
 SLURM_GPU ?= 0 #nvidia_a30:1
 SLURM_TIMELIMIT ?= 00:20:00
 
-# SLURM-specific compilers (can use numactl on cluster)
+# SLURM-specific compilers and configs (can use numactl on cluster)
 SAC2C_new_slurm := numactl --interleave all /home/rhensen/sac2c/build_p/sac2c_p
 SAC2C_orig_slurm := numactl --interleave all /home/rhensen/sacoriginal/sac2c/build_p/sac2c_p
+SAC2CRC_new_slurm := ~/.sac2crc_new_slurm
+SAC2CRC_orig_slurm := ~/.sac2crc_orig_slurm
 
 # Select compilers and execution wrapper based on SLURM mode
 ifdef SLURM_ENABLE
   SAC2C_new := $(SAC2C_new_slurm)
   SAC2C_orig := $(SAC2C_orig_slurm)
+  SAC2CRC_new := $(SAC2CRC_new_slurm)
+  SAC2CRC_orig := $(SAC2CRC_orig_slurm)
   SAC2CFLAGS := $(SAC2CFLAGS_slurm)
-  # SLURM uses different base path for sac2crc configuration
-  SAC2C_BASE_PATH := /home/rhensen
   # Build sbatch command with SLURM options
   SBATCH_BASE := sbatch --parsable --cpus-per-task=$(SLURM_CPUS) --mem=$(SLURM_MEM) --partition=$(SLURM_PARTITION) --time=$(SLURM_TIMELIMIT)
   ifneq ($(SLURM_GPU),)
@@ -46,8 +50,6 @@ ifdef SLURM_ENABLE
   ifneq ($(SLURM_ACCOUNT),)
     SBATCH_BASE += --account=$(SLURM_ACCOUNT)
   endif
-else
-  SAC2C_BASE_PATH := /home/ruben/Repos
 endif
 
 # Build settings
@@ -187,8 +189,9 @@ ifdef SLURM_ENABLE
 		$$(SBATCH_BASE) --dependency=afterok:$$$$BUILD_JOB --wrap "for i in \$$$$(seq 1 $$(RUNS)); do bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)); done" --output=$$@ > $$@.jobid; \
 		echo "Benchmark job ID: $$$$(cat $$@.jobid) submitted"; \
 	else \
-		echo "Error: Build job ID not found"; \
-		exit 1; \
+		echo "Binary exists but no build job ID found - submitting benchmark without dependency..."; \
+		$$(SBATCH_BASE) --wrap "for i in \$$$$(seq 1 $$(RUNS)); do bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)); done" --output=$$@ > $$@.jobid; \
+		echo "Benchmark job ID: $$$$(cat $$@.jobid) submitted"; \
 	fi
 else
 	@i=1; while [ $$$$i -le $$(RUNS) ]; do bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)); i=$$$$((i+1)); done > $$@
@@ -204,23 +207,17 @@ endef
 
 $(foreach c,$(COMPILERS),$(eval $(call BUILD_TARGETS,$(c))))
 
-# Config files for compiler switching
-SAC2CRC_DIRS := ~/.sac2crc/sac2crc.debug.prelude ~/.sac2crc/sac2crc.release.prelude
-SAC2CRC_PKG := ~/.sac2crc/sac2crc.package.stdlib
-
 # Pattern rule for building binaries
 define BUILD_template
 bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3): $$(SOURCE)
 	@mkdir -p bin
-	@echo "Switching to SAC2C_$(3) configuration..."
-	@sed -i 's|$$(SAC2C_BASE_PATH)/$(if $(filter orig,$(3)),sac2c,sacoriginal/sac2c)/|$$(SAC2C_BASE_PATH)/$(if $(filter orig,$(3)),sacoriginal/sac2c,sac2c)/|g' $$(SAC2CRC_DIRS)
-	@sed -i 's|$$(SAC2C_BASE_PATH)/$(if $(filter orig,$(3)),Stdlib,sacoriginal/Stdlib)/|$$(SAC2C_BASE_PATH)/$(if $(filter orig,$(3)),sacoriginal/Stdlib,Stdlib)/|g' $$(SAC2CRC_PKG)
+	@echo "Building $(1)_$(2) with $(3) compiler using $$(SAC2CRC_$(3))..."
 ifdef SLURM_ENABLE
 	@echo "Submitting build job for $(1)_$(2)_$(3)..."
-	@$$(SBATCH_BASE) --wrap "$$(SAC2C_$(3)) -DCLASS_$$(CLASS)=1 $(if $(filter fullspec,$(1)),-DSPECS) $(if $(filter inline,$(2)),-DISINLINE) $$(TARGET_FLAG_$$(TARGET)) $$(SAC2CFLAGS) $$< -o$$@" > $$@.jobid
+	@$$(SBATCH_BASE) --wrap "SAC2CRC=$$(SAC2CRC_$(3)) $$(SAC2C_$(3)) -DCLASS_$$(CLASS)=1 $(if $(filter fullspec,$(1)),-DSPECS) $(if $(filter inline,$(2)),-DISINLINE) $$(TARGET_FLAG_$$(TARGET)) $$(SAC2CFLAGS) $$< -o$$@" > $$@.jobid
 	@echo "Build job ID: $$$$(cat $$@.jobid) submitted"
 else
-	$$(SAC2C_$(3)) -DCLASS_$$(CLASS)=1 $(if $(filter fullspec,$(1)),-DSPECS) $(if $(filter inline,$(2)),-DISINLINE) $$(TARGET_FLAG_$$(TARGET)) $$(SAC2CFLAGS) $$< -o$$@
+	SAC2CRC=$$(SAC2CRC_$(3)) $$(SAC2C_$(3)) -DCLASS_$$(CLASS)=1 $(if $(filter fullspec,$(1)),-DSPECS) $(if $(filter inline,$(2)),-DISINLINE) $$(TARGET_FLAG_$$(TARGET)) $$(SAC2CFLAGS) $$< -o$$@
 endif
 endef
 
@@ -242,6 +239,7 @@ test:
 clean:
 	$(RM) bin/*
 	$(RM) -rf out
+	$(RM) bin/*.jobid out/*.jobid
 
 distclean: clean
 	$(RM) -rf venv

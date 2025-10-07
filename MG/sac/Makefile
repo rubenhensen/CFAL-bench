@@ -53,6 +53,8 @@ ifdef SLURM_ENABLE
   LIBFLAGS_new := $(LIBFLAGS_new_slurm)
   LIBFLAGS_orig := $(LIBFLAGS_orig_slurm)
   SAC2CFLAGS := $(SAC2CFLAGS_slurm)
+  # Runtime wrapper for benchmarks
+  RUN_WRAPPER := numactl --interleave all
   # SLURM output directory
   SLURM_LOGS := slurm_logs
   # Build sbatch command with SLURM options
@@ -65,6 +67,7 @@ ifdef SLURM_ENABLE
   endif
 else
   SLURM_LOGS :=
+  RUN_WRAPPER :=
 endif
 
 # Create sanitized flag string for filenames (remove - and spaces)
@@ -197,15 +200,15 @@ ifdef SLURM_ENABLE
 	@if [ -f bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3).jobid ]; then \
 		BUILD_JOB=$$$$(cat bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3).jobid); \
 		echo "Submitting benchmark with dependency on build job $$$$BUILD_JOB..."; \
-		$$(SBATCH_BASE) --dependency=afterok:$$$$BUILD_JOB --kill-on-invalid-dep=yes --output=$$(SLURM_LOGS)/bench_$(1)_$(2)_$(3)_%j.out --error=$$(SLURM_LOGS)/bench_$(1)_$(2)_$(3)_%j.err --wrap "echo 'Running benchmark command: bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET))' && for i in \$$$$(seq 1 $$(RUNS)); do bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)); done > $$@" > $$@.jobid; \
+		$$(SBATCH_BASE) --dependency=afterok:$$$$BUILD_JOB --kill-on-invalid-dep=yes --output=$$(SLURM_LOGS)/bench_$(1)_$(2)_$(3)_%j.out --error=$$(SLURM_LOGS)/bench_$(1)_$(2)_$(3)_%j.err --wrap "echo 'Running benchmark command: $$(RUN_WRAPPER) bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET))' && for i in \$$$$(seq 1 $$(RUNS)); do $$(RUN_WRAPPER) bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)); done > $$@" > $$@.jobid; \
 		echo "Benchmark job ID: $$$$(cat $$@.jobid) submitted"; \
 	else \
 		echo "Binary exists but no build job ID found - submitting benchmark without dependency..."; \
-		$$(SBATCH_BASE) --output=$$(SLURM_LOGS)/bench_$(1)_$(2)_$(3)_%j.out --error=$$(SLURM_LOGS)/bench_$(1)_$(2)_$(3)_%j.err --wrap "echo 'Running benchmark command: bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET))' && for i in \$$$$(seq 1 $$(RUNS)); do bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)); done > $$@" > $$@.jobid; \
+		$$(SBATCH_BASE) --output=$$(SLURM_LOGS)/bench_$(1)_$(2)_$(3)_%j.out --error=$$(SLURM_LOGS)/bench_$(1)_$(2)_$(3)_%j.err --wrap "echo 'Running benchmark command: $$(RUN_WRAPPER) bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET))' && for i in \$$$$(seq 1 $$(RUNS)); do $$(RUN_WRAPPER) bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)); done > $$@" > $$@.jobid; \
 		echo "Benchmark job ID: $$$$(cat $$@.jobid) submitted"; \
 	fi
 else
-	@i=1; while [ $$$$i -le $$(RUNS) ]; do bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)); i=$$$$((i+1)); done > $$@
+	@i=1; while [ $$$$i -le $$(RUNS) ]; do $$(RUN_WRAPPER) bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)); i=$$$$((i+1)); done > $$@
 endif
 endef
 

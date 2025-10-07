@@ -191,11 +191,11 @@ ifdef SLURM_ENABLE
 	@if [ -f bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3).jobid ]; then \
 		BUILD_JOB=$$$$(cat bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3).jobid); \
 		echo "Submitting benchmark with dependency on build job $$$$BUILD_JOB..."; \
-		$$(SBATCH_BASE) --dependency=afterok:$$$$BUILD_JOB --kill-on-invalid-dep=yes --output=$$@ --error=$$(SLURM_LOGS)/bench_$(1)_$(2)_$(3)_%j.err --wrap "for i in \$$$$(seq 1 $$(RUNS)); do bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)); done" > $$@.jobid; \
+		$$(SBATCH_BASE) --dependency=afterok:$$$$BUILD_JOB --kill-on-invalid-dep=yes --output=$$@ --error=$$(SLURM_LOGS)/bench_$(1)_$(2)_$(3)_%j.err --wrap "echo 'Running benchmark: bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)) ($$(RUNS) runs)' && for i in \$$$$(seq 1 $$(RUNS)); do bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)); done" > $$@.jobid; \
 		echo "Benchmark job ID: $$$$(cat $$@.jobid) submitted"; \
 	else \
 		echo "Binary exists but no build job ID found - submitting benchmark without dependency..."; \
-		$$(SBATCH_BASE) --output=$$@ --error=$$(SLURM_LOGS)/bench_$(1)_$(2)_$(3)_%j.err --wrap "for i in \$$$$(seq 1 $$(RUNS)); do bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)); done" > $$@.jobid; \
+		$$(SBATCH_BASE) --output=$$@ --error=$$(SLURM_LOGS)/bench_$(1)_$(2)_$(3)_%j.err --wrap "echo 'Running benchmark: bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)) ($$(RUNS) runs)' && for i in \$$$$(seq 1 $$(RUNS)); do bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)); done" > $$@.jobid; \
 		echo "Benchmark job ID: $$$$(cat $$@.jobid) submitted"; \
 	fi
 else
@@ -220,7 +220,7 @@ bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3): $$(SOURCE)
 ifdef SLURM_ENABLE
 	@mkdir -p $$(SLURM_LOGS)
 	@echo "Submitting build job for $(1)_$(2)_$(3)..."
-	@$$(SBATCH_BASE) --output=$$(SLURM_LOGS)/build_$(1)_$(2)_$(3)_%j.out --wrap "SAC2CRC=$$(SAC2CRC_$(3)) $$(SAC2C_$(3)) -DCLASS_$$(CLASS)=1 $(if $(filter fullspec,$(1)),-DSPECS) $(if $(filter inline,$(2)),-DISINLINE) $$(TARGET_FLAG_$$(TARGET)) $$(SAC2CFLAGS) $$< -o$$@" > $$@.jobid
+	@$$(SBATCH_BASE) --output=$$(SLURM_LOGS)/build_$(1)_$(2)_$(3)_%j.out --wrap "echo 'Running: SAC2CRC=$$(SAC2CRC_$(3)) $$(SAC2C_$(3)) -DCLASS_$$(CLASS)=1 $(if $(filter fullspec,$(1)),-DSPECS) $(if $(filter inline,$(2)),-DISINLINE) $$(TARGET_FLAG_$$(TARGET)) $$(SAC2CFLAGS) $$< -o$$@' && SAC2CRC=$$(SAC2CRC_$(3)) $$(SAC2C_$(3)) -DCLASS_$$(CLASS)=1 $(if $(filter fullspec,$(1)),-DSPECS) $(if $(filter inline,$(2)),-DISINLINE) $$(TARGET_FLAG_$$(TARGET)) $$(SAC2CFLAGS) $$< -o$$@" > $$@.jobid
 	@echo "Build job ID: $$$$(cat $$@.jobid) submitted"
 else
 	SAC2CRC=$$(SAC2CRC_$(3)) $$(SAC2C_$(3)) -DCLASS_$$(CLASS)=1 $(if $(filter fullspec,$(1)),-DSPECS) $(if $(filter inline,$(2)),-DISINLINE) $$(TARGET_FLAG_$$(TARGET)) $$(SAC2CFLAGS) $$< -o$$@

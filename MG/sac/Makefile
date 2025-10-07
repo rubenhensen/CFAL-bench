@@ -169,7 +169,7 @@ out/MG_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_comparison.csv: $(foreach v,$(VARIANT_CO
 
 # Generate CSV from raw files for each compiler
 define BENCHMARK_CSV_template
-out/MG_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(1).csv: $$(foreach v,$$(VARIANT_COMBINATIONS),out/MG_$$v_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(1).raw)
+out/MG_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(1).csv: $$(foreach v,$$(VARIANT_COMBINATIONS),out/MG_$$v_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(1).raw) sync
 	@echo "=== Generating CSV for $(1) compiler ==="
 	@mkdir -p out
 	@printf 'Binary,Class,Type,Mean,StdDev\n' > $$@

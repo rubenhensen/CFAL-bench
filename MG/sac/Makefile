@@ -22,6 +22,16 @@ SPEC_VARIANTS := fullspec nospec
 INLINE_VARIANTS := inline noinline
 VARIANT_COMBINATIONS := $(foreach s,$(SPEC_VARIANTS),$(foreach i,$(INLINE_VARIANTS),$s_$i))
 
+# Build settings
+TARGET ?= mt_pth
+MT_CORES ?= 32
+CLASS ?= S
+RUNS := 20
+SOURCE := src/MG.sac
+SAC2CFLAGS := -maxwlur 27 -v0 -noSOP -noSRP -maxoptcyc 30 -maxspec 100
+SAC2CFLAGS_slurm := $(SAC2CFLAGS) -mt_bind NUMA
+PYTHON := venv/bin/python3
+
 # SLURM Configuration (set SLURM_ENABLE=1 to enable)
 SLURM_CPUS ?= 32
 SLURM_MEM ?= 60G
@@ -56,16 +66,6 @@ ifdef SLURM_ENABLE
 else
   SLURM_LOGS :=
 endif
-
-# Build settings
-TARGET ?= mt_pth
-MT_CORES ?= 32
-CLASS ?= S
-RUNS := 20
-SOURCE := src/MG.sac
-SAC2CFLAGS := -maxwlur 27 -v0 -noSOP -noSRP -maxoptcyc 30 -maxspec 100
-SAC2CFLAGS_slurm ?= $(SAC2CFLAGS) -mt_bind NUMA
-PYTHON := venv/bin/python3
 
 # Create sanitized flag string for filenames (remove - and spaces)
 empty :=

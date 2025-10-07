@@ -110,16 +110,18 @@ comparison: out/MG_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_comparison.csv
 sync:
 ifdef SLURM_ENABLE
 	@echo "=== Waiting for all SLURM jobs to complete ==="
-	@for jobfile in out/*.raw.jobid; do \
+	@for jobfile in bin/*.jobid out/*.raw.jobid; do \
 		if [ -f "$$jobfile" ]; then \
 			jobid=$$(cat "$$jobfile"); \
 			echo "Waiting for job $$jobid..."; \
-			while scontrol show job $$jobid 2>/dev/null | grep -q "JobState=PENDING\|JobState=RUNNING"; do \
-				sleep 5; \
+			while scontrol show job $$jobid 2>/dev/null | grep -q "JobState=PENDING\|JobState=RUNNING\|JobState=COMPLETING"; do \
+				sleep 2; \
 			done; \
+			echo "Job $$jobid completed"; \
 		fi; \
 	done
-	@echo "All jobs completed"
+	@echo "=== All jobs completed ==="
+	@sleep 2
 endif
 
 # Comparison file target - only regenerates if .raw files are newer
@@ -170,7 +172,8 @@ out/MG_$(CLASS)_$(TARGET)_$(FLAGS_HASH)_comparison.csv: $(foreach v,$(VARIANT_CO
 
 # Generate CSV from raw files for each compiler
 define BENCHMARK_CSV_template
-out/MG_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(1).csv: $$(foreach v,$$(VARIANT_COMBINATIONS),out/MG_$$v_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(1).raw) sync
+out/MG_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(1).csv: $$(foreach v,$$(VARIANT_COMBINATIONS),out/MG_$$v_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(1).raw)
+	@$$(MAKE) sync
 	@echo "=== Generating CSV for $(1) compiler ==="
 	@mkdir -p out
 	@printf 'Binary,Class,Type,Mean,StdDev\n' > $$@

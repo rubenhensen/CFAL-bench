@@ -42,6 +42,8 @@ ifdef SLURM_ENABLE
   SAC2CRC_new := $(SAC2CRC_new_slurm)
   SAC2CRC_orig := $(SAC2CRC_orig_slurm)
   SAC2CFLAGS := $(SAC2CFLAGS_slurm)
+  # SLURM output directory
+  SLURM_LOGS := slurm_logs
   # Build sbatch command with SLURM options
   SBATCH_BASE := sbatch --parsable --cpus-per-task=$(SLURM_CPUS) --mem=$(SLURM_MEM) --partition=$(SLURM_PARTITION) --time=$(SLURM_TIMELIMIT)
   ifneq ($(SLURM_GPU),)
@@ -50,6 +52,8 @@ ifdef SLURM_ENABLE
   ifneq ($(SLURM_ACCOUNT),)
     SBATCH_BASE += --account=$(SLURM_ACCOUNT)
   endif
+else
+  SLURM_LOGS :=
 endif
 
 # Build settings
@@ -183,14 +187,15 @@ out/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3).raw: bin/MG_$(1)_$(2)_
 	@echo "=== Running benchmark: $(1)_$(2) with $(3) compiler ==="
 	@mkdir -p out
 ifdef SLURM_ENABLE
+	@mkdir -p $$(SLURM_LOGS)
 	@if [ -f bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3).jobid ]; then \
 		BUILD_JOB=$$$$(cat bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3).jobid); \
 		echo "Submitting benchmark with dependency on build job $$$$BUILD_JOB..."; \
-		$$(SBATCH_BASE) --dependency=afterok:$$$$BUILD_JOB --wrap "for i in \$$$$(seq 1 $$(RUNS)); do bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)); done" --output=$$@ > $$@.jobid; \
+		$$(SBATCH_BASE) --dependency=afterok:$$$$BUILD_JOB --output=$$@ --error=$$(SLURM_LOGS)/bench_$(1)_$(2)_$(3)_%j.err --wrap "for i in \$$$$(seq 1 $$(RUNS)); do bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)); done" > $$@.jobid; \
 		echo "Benchmark job ID: $$$$(cat $$@.jobid) submitted"; \
 	else \
 		echo "Binary exists but no build job ID found - submitting benchmark without dependency..."; \
-		$$(SBATCH_BASE) --wrap "for i in \$$$$(seq 1 $$(RUNS)); do bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)); done" --output=$$@ > $$@.jobid; \
+		$$(SBATCH_BASE) --output=$$@ --error=$$(SLURM_LOGS)/bench_$(1)_$(2)_$(3)_%j.err --wrap "for i in \$$$$(seq 1 $$(RUNS)); do bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3) $$(TARGET_RUNTIME_$$(TARGET)); done" > $$@.jobid; \
 		echo "Benchmark job ID: $$$$(cat $$@.jobid) submitted"; \
 	fi
 else
@@ -213,8 +218,9 @@ bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3): $$(SOURCE)
 	@mkdir -p bin
 	@echo "Building $(1)_$(2) with $(3) compiler using $$(SAC2CRC_$(3))..."
 ifdef SLURM_ENABLE
+	@mkdir -p $$(SLURM_LOGS)
 	@echo "Submitting build job for $(1)_$(2)_$(3)..."
-	@$$(SBATCH_BASE) --wrap "SAC2CRC=$$(SAC2CRC_$(3)) $$(SAC2C_$(3)) -DCLASS_$$(CLASS)=1 $(if $(filter fullspec,$(1)),-DSPECS) $(if $(filter inline,$(2)),-DISINLINE) $$(TARGET_FLAG_$$(TARGET)) $$(SAC2CFLAGS) $$< -o$$@" > $$@.jobid
+	@$$(SBATCH_BASE) --output=$$(SLURM_LOGS)/build_$(1)_$(2)_$(3)_%j.out --wrap "SAC2CRC=$$(SAC2CRC_$(3)) $$(SAC2C_$(3)) -DCLASS_$$(CLASS)=1 $(if $(filter fullspec,$(1)),-DSPECS) $(if $(filter inline,$(2)),-DISINLINE) $$(TARGET_FLAG_$$(TARGET)) $$(SAC2CFLAGS) $$< -o$$@" > $$@.jobid
 	@echo "Build job ID: $$$$(cat $$@.jobid) submitted"
 else
 	SAC2CRC=$$(SAC2CRC_$(3)) $$(SAC2C_$(3)) -DCLASS_$$(CLASS)=1 $(if $(filter fullspec,$(1)),-DSPECS) $(if $(filter inline,$(2)),-DISINLINE) $$(TARGET_FLAG_$$(TARGET)) $$(SAC2CFLAGS) $$< -o$$@
@@ -237,9 +243,7 @@ test:
 	@echo "All tests passed!"
 
 clean:
-	$(RM) bin/*
-	$(RM) -rf out
-	$(RM) bin/*.jobid out/*.jobid
+	$(RM) -rf bin out slurm_logs
 
 distclean: clean
 	$(RM) -rf venv

@@ -15,8 +15,9 @@
 COMPILERS := new orig
 SAC2C_new := /home/ruben/Repos/sac2c/build_p/sac2c_p
 SAC2C_orig := /home/ruben/Repos/sacoriginal/sac2c/build_p/sac2c_p
-SAC2CRC_new := ~/.sac2crc_new
-SAC2CRC_orig := ~/.sac2crc_orig
+# Library paths for each compiler
+LIBFLAGS_new := -L /home/ruben/Repos/sac2c/build_p/lib -T /home/ruben/Repos/sac2c/build_p/tree
+LIBFLAGS_orig := -L /home/ruben/Repos/sacoriginal/sac2c/build_p/lib -T /home/ruben/Repos/sacoriginal/sac2c/build_p/tree
 SPEC_VARIANTS := fullspec nospec
 INLINE_VARIANTS := inline noinline
 VARIANT_COMBINATIONS := $(foreach s,$(SPEC_VARIANTS),$(foreach i,$(INLINE_VARIANTS),$s_$i))
@@ -29,18 +30,18 @@ SLURM_PARTITION ?= csmpi_fpga_long
 SLURM_GPU ?= 0 #nvidia_a30:1
 SLURM_TIMELIMIT ?= 00:20:00
 
-# SLURM-specific compilers and configs (can use numactl on cluster)
+# SLURM-specific compilers and library paths (can use numactl on cluster)
 SAC2C_new_slurm := numactl --interleave all /home/rhensen/sac2c/build_p/sac2c_p
 SAC2C_orig_slurm := numactl --interleave all /home/rhensen/sacoriginal/sac2c/build_p/sac2c_p
-SAC2CRC_new_slurm := /home/rhensen/.sac2crc_new_slurm
-SAC2CRC_orig_slurm := /home/rhensen/.sac2crc_orig_slurm
+LIBFLAGS_new_slurm := -L /home/rhensen/sac2c/build_p/lib -T /home/rhensen/sac2c/build_p/tree
+LIBFLAGS_orig_slurm := -L /home/rhensen/sacoriginal/sac2c/build_p/lib -T /home/rhensen/sacoriginal/sac2c/build_p/tree
 
 # Select compilers and execution wrapper based on SLURM mode
 ifdef SLURM_ENABLE
   SAC2C_new := $(SAC2C_new_slurm)
   SAC2C_orig := $(SAC2C_orig_slurm)
-  SAC2CRC_new := $(SAC2CRC_new_slurm)
-  SAC2CRC_orig := $(SAC2CRC_orig_slurm)
+  LIBFLAGS_new := $(LIBFLAGS_new_slurm)
+  LIBFLAGS_orig := $(LIBFLAGS_orig_slurm)
   SAC2CFLAGS := $(SAC2CFLAGS_slurm)
   # SLURM output directory
   SLURM_LOGS := slurm_logs
@@ -216,14 +217,14 @@ $(foreach c,$(COMPILERS),$(eval $(call BUILD_TARGETS,$(c))))
 define BUILD_template
 bin/MG_$(1)_$(2)_$$(CLASS)_$$(TARGET)_$$(FLAGS_HASH)_$(3): $$(SOURCE)
 	@mkdir -p bin
-	@echo "Building $(1)_$(2) with $(3) compiler using $$(SAC2CRC_$(3))..."
+	@echo "Building $(1)_$(2) with $(3) compiler..."
 ifdef SLURM_ENABLE
 	@mkdir -p $$(SLURM_LOGS)
 	@echo "Submitting build job for $(1)_$(2)_$(3)..."
-	@$$(SBATCH_BASE) --output=$$(SLURM_LOGS)/build_$(1)_$(2)_$(3)_%j.out --wrap "echo 'Running: SAC2CRC=$$(SAC2CRC_$(3)) $$(SAC2C_$(3)) -DCLASS_$$(CLASS)=1 $(if $(filter fullspec,$(1)),-DSPECS) $(if $(filter inline,$(2)),-DISINLINE) $$(TARGET_FLAG_$$(TARGET)) $$(SAC2CFLAGS) $$< -o$$@' && SAC2CRC=$$(SAC2CRC_$(3)) $$(SAC2C_$(3)) -DCLASS_$$(CLASS)=1 $(if $(filter fullspec,$(1)),-DSPECS) $(if $(filter inline,$(2)),-DISINLINE) $$(TARGET_FLAG_$$(TARGET)) $$(SAC2CFLAGS) $$< -o$$@" > $$@.jobid
+	@$$(SBATCH_BASE) --output=$$(SLURM_LOGS)/build_$(1)_$(2)_$(3)_%j.out --wrap "echo 'Running: $$(SAC2C_$(3)) $$(LIBFLAGS_$(3)) -DCLASS_$$(CLASS)=1 $(if $(filter fullspec,$(1)),-DSPECS) $(if $(filter inline,$(2)),-DISINLINE) $$(TARGET_FLAG_$$(TARGET)) $$(SAC2CFLAGS) $$< -o$$@' && $$(SAC2C_$(3)) $$(LIBFLAGS_$(3)) -DCLASS_$$(CLASS)=1 $(if $(filter fullspec,$(1)),-DSPECS) $(if $(filter inline,$(2)),-DISINLINE) $$(TARGET_FLAG_$$(TARGET)) $$(SAC2CFLAGS) $$< -o$$@" > $$@.jobid
 	@echo "Build job ID: $$$$(cat $$@.jobid) submitted"
 else
-	SAC2CRC=$$(SAC2CRC_$(3)) $$(SAC2C_$(3)) -DCLASS_$$(CLASS)=1 $(if $(filter fullspec,$(1)),-DSPECS) $(if $(filter inline,$(2)),-DISINLINE) $$(TARGET_FLAG_$$(TARGET)) $$(SAC2CFLAGS) $$< -o$$@
+	$$(SAC2C_$(3)) $$(LIBFLAGS_$(3)) -DCLASS_$$(CLASS)=1 $(if $(filter fullspec,$(1)),-DSPECS) $(if $(filter inline,$(2)),-DISINLINE) $$(TARGET_FLAG_$$(TARGET)) $$(SAC2CFLAGS) $$< -o$$@
 endif
 endef
 

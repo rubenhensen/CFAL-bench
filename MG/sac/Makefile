@@ -113,11 +113,13 @@ ifdef SLURM_ENABLE
 	@for jobfile in bin/*.jobid out/*.raw.jobid; do \
 		if [ -f "$$jobfile" ]; then \
 			jobid=$$(cat "$$jobfile"); \
-			echo "Waiting for job $$jobid..."; \
-			while scontrol show job $$jobid 2>/dev/null | grep -q "JobState=PENDING\|JobState=RUNNING\|JobState=COMPLETING"; do \
-				sleep 2; \
-			done; \
-			echo "Job $$jobid completed"; \
+			if [ -n "$$jobid" ]; then \
+				echo "Waiting for job $$jobid..."; \
+				while scontrol show job $$jobid 2>/dev/null | grep -q "JobState=PENDING\|JobState=RUNNING\|JobState=COMPLETING"; do \
+					sleep 2; \
+				done; \
+				echo "Job $$jobid completed"; \
+			fi; \
 		fi; \
 	done
 	@echo "=== All jobs completed ==="

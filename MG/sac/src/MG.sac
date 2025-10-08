@@ -51,6 +51,9 @@ use Benchmarking: all;
   #define S(z) Sb(z)
 #endif
 
+#ifdef SPECSINLINE
+specialize double[3,3,3]       gen_weights(double[4] r);
+#endif
 #ifdef ISINLINE
 inline
 #else
@@ -62,14 +65,9 @@ double[.,.,.] gen_weights(double[4] cs)
 }
 
 #ifdef SPECSINLINE
-specialize double[512,512,512] relax(double[512,512,512] r);
-specialize double[256,256,256] relax(double[256,256,256] r);
-specialize double[128,128,128] relax(double[128,128,128] r);
-specialize double[64,64,64]    relax(double[64,64,64] r);
-specialize double[32,32,32]    relax(double[32,32,32] r);
-specialize double[16,16,16]    relax(double[16,16,16] r);
-specialize double[8,8,8]       relax(double[8,8,8] r);
-specialize double[4,4,4]       relax(double[4,4,4] r);
+specialize double[*]       relax(double[4,4,4] s, double[3,3,3] w);
+specialize double[*]       relax(double[2,2,2] s, double[3,3,3] w);
+specialize double[*]       relax(double[.,.,.] s, double[3,3,3] w);
 #endif
 #ifdef ISINLINE
 inline
@@ -83,14 +81,8 @@ double[d:shp] relax(double[d:shp] x, double[d:wshp] w)
 }
 
 #ifdef SPECSINLINE
-specialize double[512,512,512] relax_mg(double[512,512,512] r);
-specialize double[256,256,256] relax_mg(double[256,256,256] r);
-specialize double[128,128,128] relax_mg(double[128,128,128] r);
-specialize double[64,64,64]    relax_mg(double[64,64,64] r);
-specialize double[32,32,32]    relax_mg(double[32,32,32] r);
-specialize double[16,16,16]    relax_mg(double[16,16,16] r);
-specialize double[8,8,8]       relax_mg(double[8,8,8] r);
-specialize double[4,4,4]       relax_mg(double[4,4,4] r);
+specialize double[*]       relax_mg(double[4,4,4] x, double[4] cs);
+specialize double[*]       relax_mg(double[2,2,2] x, double[4] cs);
 #endif
 #ifdef ISINLINE
 inline

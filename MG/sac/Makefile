@@ -28,7 +28,7 @@ MT_CORES ?= 32
 CLASS ?= S
 RUNS := 20
 SOURCE := src/MG.sac
-SAC2CFLAGS := -maxwlur 27 -v0 -noSOP -noSRP -maxoptcyc 30 -maxspec 100 -DSPECSINLINE
+SAC2CFLAGS := -maxwlur 27 -v0 -noSOP -noSRP -maxoptcyc 30 -maxspec 100 
 SAC2CFLAGS_slurm := $(SAC2CFLAGS) -mt_bind NUMA
 PYTHON := venv/bin/python3
 

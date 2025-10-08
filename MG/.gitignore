@@ -3,3 +3,5 @@ MG.o
 MG.i
 MG.c
 venv/
+bin/
+out/

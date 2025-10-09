@@ -1,0 +1,5 @@
+Binary,Class,Type,Mean,StdDev
+sac2c_orig_fullspec_inline,B,mt_pth,45.568560249999997,2.2488404864903808
+sac2c_orig_fullspec_noinline,B,mt_pth,25.833173799999997,1.4225415567125834
+sac2c_orig_nospec_inline,B,mt_pth,14.772340700000003,0.38288538267412292
+sac2c_orig_nospec_noinline,B,mt_pth,12.213977250000001,0.2488699085873734

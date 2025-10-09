@@ -1,0 +1,17 @@
+Variant,T-statistic,P-value,Significant(95%),Mean_new(GFLOP/s),Mean_orig(GFLOP/s),Speedup,Winner
+fullspec_inline,-1.5786,0.122725,NO,42.165034,45.568560,0.9253,TIE
+fullspec_noinline,-0.8187,0.418052,NO,25.062513,25.833174,0.9702,TIE
+nospec_inline,75.2405,0.000000,YES,45.756771,14.772341,3.0975,NEW
+nospec_noinline,61.1202,0.000000,YES,26.207688,12.213977,2.1457,NEW
+
+Cross-comparison: nospec_new vs fullspec_orig
+Variant,T-statistic,P-value,Significant(95%),Mean_nospec_new(GFLOP/s),Mean_fullspec_orig(GFLOP/s),Speedup,Winner
+inline,0.2877,0.775158,NO,45.756771,45.568560,1.0041,TIE
+noinline,0.9492,0.348503,NO,26.207688,25.833174,1.0145,TIE
+
+Inline vs Noinline comparison (same compiler/spec)
+Compiler_Spec,T-statistic,P-value,Significant(95%),Mean_inline(GFLOP/s),Mean_noinline(GFLOP/s),Speedup,Winner
+new_fullspec,7.5275,0.000000,YES,42.165034,25.062513,1.6824,INLINE
+new_nospec,42.5556,0.000000,YES,45.756771,26.207688,1.7459,INLINE
+orig_fullspec,32.3279,0.000000,YES,45.568560,25.833174,1.7640,INLINE
+orig_nospec,24.4201,0.000000,YES,14.772341,12.213977,1.2095,INLINE

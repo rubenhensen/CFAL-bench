@@ -1,0 +1,30 @@
+Running benchmark command: numactl --interleave all bin/MG_fullspec_inline_B_mt_pth_maxwlur_27_v0_noSOP_noSRP_maxoptcyc_30_maxspec_100__mt_bind_NUMA_new -mt 32
+
+
+###############################################################################
+Science Cluster
+Job 6688419 for user 'rhensen'
+Finished at: Wed Oct  8 18:30:50 CEST 2025
+
+Job details:
+============
+
+Name                : wrap
+User                : rhensen
+Partition           : csmpi_fpga_long
+Nodes               : cn132
+Cores               : 32
+State               : COMPLETED
+Submit              : 2025-10-08T18:30:18
+Start               : 2025-10-08T18:30:36
+End                 : 2025-10-08T18:30:50
+Reserved walltime   : 00:20:00
+Used walltime       : 00:00:14
+Used CPU time       : 00:05:38 (efficiency: 75.65%)
+% User (Computation): 91.25%
+% System (I/O)      :  8.75%
+Mem reserved        : 60G
+Max Mem used        : 0.00  (cn132)
+Max Disk Write      : 0.00  (cn132)
+Max Disk Read       : 0.00  (cn132)
+

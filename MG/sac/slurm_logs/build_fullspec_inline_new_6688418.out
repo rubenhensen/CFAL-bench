@@ -1,0 +1,30 @@
+Running: numactl --interleave all /home/rhensen/sac2c/build_p/sac2c_p -L /home/rhensen/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude -T /home/rhensen/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude -L /home/rhensen/Stdlib/build/lib -T /home/rhensen/Stdlib/build/lib -DCLASS_B=1 -DSPECS -DISINLINE -tmt_pth -maxwlur 27 -v0 -noSOP -noSRP -maxoptcyc 30 -maxspec 100  -mt_bind NUMA src/MG.sac -obin/MG_fullspec_inline_B_mt_pth_maxwlur_27_v0_noSOP_noSRP_maxoptcyc_30_maxspec_100__mt_bind_NUMA_new
+
+
+###############################################################################
+Science Cluster
+Job 6688418 for user 'rhensen'
+Finished at: Wed Oct  8 18:30:36 CEST 2025
+
+Job details:
+============
+
+Name                : wrap
+User                : rhensen
+Partition           : csmpi_fpga_long
+Nodes               : cn132
+Cores               : 32
+State               : COMPLETED
+Submit              : 2025-10-08T18:30:17
+Start               : 2025-10-08T18:30:17
+End                 : 2025-10-08T18:30:36
+Reserved walltime   : 00:20:00
+Used walltime       : 00:00:19
+Used CPU time       : 00:00:18 (efficiency:  2.99%)
+% User (Computation): 91.11%
+% System (I/O)      :  8.89%
+Mem reserved        : 60G
+Max Mem used        : 72.00K (cn132)
+Max Disk Write      : 0.00  (cn132)
+Max Disk Read       : 0.00  (cn132)
+

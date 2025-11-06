@@ -26,7 +26,7 @@ struct stat Welford()
 
     char *line = NULL;
     size_t len = 0;
-    ssize_t nread;
+    size_t nread;
 
     while ((nread = getline(&line, &len, stdin)) != -1) {
         double new_value = atof(line);

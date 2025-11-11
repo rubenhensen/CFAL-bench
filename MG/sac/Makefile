@@ -15,9 +15,11 @@
 COMPILERS := new orig
 SAC2C_new := /home/ruben/Repos/sac2c/build_p/sac2c_p
 SAC2C_orig := /home/ruben/Repos/sacoriginal/sac2c/build_p/sac2c_p
+# Get absolute path to current directory for local modules (CURDIR is a built-in make variable)
+PROJDIR := $(CURDIR)
 # Library and tree paths for prelude and stdlib
-LIBFLAGS_new := -L /home/ruben/Repos/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude -T /home/ruben/Repos/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude -L /home/ruben/Repos/Stdlib/build/lib -T /home/ruben/Repos/Stdlib/build/lib
-LIBFLAGS_orig := -L /home/ruben/Repos/sacoriginal/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude -T /home/ruben/Repos/sacoriginal/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude -L /home/ruben/Repos/sacoriginal/Stdlib/build/lib -T /home/ruben/Repos/sacoriginal/Stdlib/build/lib
+LIBFLAGS_new := -L $(PROJDIR)/host -T $(PROJDIR)/tree -L /home/ruben/Repos/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude -T /home/ruben/Repos/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude -L /home/ruben/Repos/Stdlib/build/lib -T /home/ruben/Repos/Stdlib/build/lib
+LIBFLAGS_orig := -L $(PROJDIR)/host -T $(PROJDIR)/tree -L /home/ruben/Repos/sacoriginal/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude -T /home/ruben/Repos/sacoriginal/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude -L /home/ruben/Repos/sacoriginal/Stdlib/build/lib -T /home/ruben/Repos/sacoriginal/Stdlib/build/lib
 SPEC_VARIANTS := fullspec nospec
 INLINE_VARIANTS := inline noinline
 VARIANT_COMBINATIONS := $(foreach s,$(SPEC_VARIANTS),$(foreach i,$(INLINE_VARIANTS),$s_$i))
@@ -43,8 +45,8 @@ SLURM_TIMELIMIT ?= 00:20:00
 # SLURM-specific compilers and library paths (can use numactl on cluster)
 SAC2C_new_slurm := numactl --interleave all /home/rhensen/sac2c/build_p/sac2c_p
 SAC2C_orig_slurm := numactl --interleave all /home/rhensen/sacoriginal/sac2c/build_p/sac2c_p
-LIBFLAGS_new_slurm := -L /home/rhensen/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude -T /home/rhensen/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude -L /home/rhensen/Stdlib/build/lib -T /home/rhensen/Stdlib/build/lib
-LIBFLAGS_orig_slurm := -L /home/rhensen/sacoriginal/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude -T /home/rhensen/sacoriginal/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude -L /home/rhensen/sacoriginal/Stdlib/build/lib -T /home/rhensen/sacoriginal/Stdlib/build/lib
+LIBFLAGS_new_slurm := -L $(PROJDIR)/host -T $(PROJDIR)/tree -L /home/rhensen/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude -T /home/rhensen/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude -L /home/rhensen/Stdlib/build/lib -T /home/rhensen/Stdlib/build/lib
+LIBFLAGS_orig_slurm := -L $(PROJDIR)/host -T $(PROJDIR)/tree -L /home/rhensen/sacoriginal/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude -T /home/rhensen/sacoriginal/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude -L /home/rhensen/sacoriginal/Stdlib/build/lib -T /home/rhensen/sacoriginal/Stdlib/build/lib
 
 # Select compilers and execution wrapper based on SLURM mode
 ifdef SLURM_ENABLE

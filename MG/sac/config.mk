@@ -47,10 +47,9 @@ MAX_RETRIES           := 2
 # SLURM configuration
 # =============================================================================
 SLURM_ACCOUNT         := csmpi
-# Use csmpi_fpga_long for 32-core jobs (cncz nodes only have 4–8 cores).
-SLURM_PARTITION       := csmpi_fpga_long
+SLURM_PARTITION       := cncz
 SLURM_CPUS            := 32
-SLURM_MEM             := 60G
+SLURM_MEM             := 14G
 # Wall clock per task: build (~5 min sac2c) + 20 benchmark runs (~10 min).
 SLURM_TIMELIMIT       := 00:30:00
 

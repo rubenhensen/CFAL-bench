@@ -11,7 +11,7 @@ cd "${PROJECT_DIR}"
 MAX_RETRIES="${MAX_RETRIES:-2}"
 
 echo "========================================================================"
-echo "MG Benchmark — full run  (class=${CLASS}, target=${TARGET})"
+echo "MG Benchmark — full run  (classes=${CLASSES}, target=${TARGET})"
 echo "========================================================================"
 
 echo

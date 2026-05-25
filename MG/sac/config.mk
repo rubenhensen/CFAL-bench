@@ -34,7 +34,7 @@ INLINE_VARIANTS       := inline noinline
 CLASSES               := A B C
 # TARGET: seq mt_pth cuda_man
 TARGET                := mt_pth
-MT_CORES              := 32
+MT_CORES              := 4
 RUNS                  := 20
 
 # sac2c flags (no -mt_bind; numactl --interleave is handled by the job script)
@@ -48,7 +48,7 @@ MAX_RETRIES           := 2
 # =============================================================================
 SLURM_ACCOUNT         := csmpi
 SLURM_PARTITION       := cncz
-SLURM_CPUS            := 32
+SLURM_CPUS            := 4
 SLURM_MEM             := 14G
 # Wall clock per task: build (~5 min sac2c) + 20 benchmark runs (~10 min).
 SLURM_TIMELIMIT       := 00:30:00

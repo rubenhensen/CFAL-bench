@@ -54,7 +54,6 @@ sed \
   -e "s|__MEM__|${SLURM_MEM}|g" \
   -e "s|__ACCOUNT__|${SLURM_ACCOUNT}|g" \
   -e "s|__PARTITION__|${SLURM_PARTITION}|g" \
-  -e "s|__ARRAY_CONCURRENCY__|${ARRAY_CONCURRENCY_STR}|g" \
   -e "s|__SLURM_NODE_DIRECTIVE__|${NODE_DIRECTIVE}|g" \
   -e "s|__TEMP_ROOT_PREFERRED__|${TEMP_ROOT_PREFERRED:-/scratch}|g" \
   -e "s|__TEMP_ROOT_FALLBACK__|${TEMP_ROOT_FALLBACK:-\$HOME}|g" \

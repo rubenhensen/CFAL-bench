@@ -21,7 +21,7 @@ include config.mk
 # SLURM orchestration targets (the new pipeline)
 # =============================================================================
 
-export CLASS COMPILERS SPEC_VARIANTS INLINE_VARIANTS TARGET MT_CORES RUNS SAC2CFLAGS
+export CLASSES COMPILERS SPEC_VARIANTS INLINE_VARIANTS TARGET MT_CORES RUNS SAC2CFLAGS
 export SAC2C_NEW_SLURM SAC2C_NEW_DIR_SLURM SAC2C_NEW_SRC_SLURM STDLIB_BUILD_NEW
 export SAC2C_ORIG_SLURM SAC2C_ORIG_DIR_SLURM SAC2C_ORIG_SRC_SLURM STDLIB_BUILD_ORIG
 export STDLIB_SRC_SLURM
@@ -56,7 +56,7 @@ report: venv
 
 print-config:
 	@echo "=== MG Benchmark configuration ==="
-	@echo "  CLASS             = $(CLASS)"
+	@echo "  CLASSES           = $(CLASSES)"
 	@echo "  TARGET            = $(TARGET)"
 	@echo "  MT_CORES          = $(MT_CORES)"
 	@echo "  RUNS              = $(RUNS)"

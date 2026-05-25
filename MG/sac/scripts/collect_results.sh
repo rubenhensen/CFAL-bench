@@ -18,11 +18,11 @@ PY="${PYTHON:-python3}"
 import csv, glob, json, os, sys
 from collections import defaultdict, Counter
 
-compilers      = os.environ.get("COMPILERS", "new orig").split()
-spec_variants  = os.environ.get("SPEC_VARIANTS", "fullspec nospec").split()
+compilers       = os.environ.get("COMPILERS", "new orig").split()
+spec_variants   = os.environ.get("SPEC_VARIANTS", "fullspec nospec").split()
 inline_variants = os.environ.get("INLINE_VARIANTS", "inline noinline").split()
-mg_class       = os.environ.get("CLASS", "?")
-mg_target      = os.environ.get("TARGET", "?")
+mg_classes      = os.environ.get("CLASSES", "?").split()
+mg_target       = os.environ.get("TARGET", "?")
 
 records = []
 for path in sorted(glob.glob("results/mg-*.json")):
@@ -78,7 +78,7 @@ batch = {
         "compilers": compilers,
         "spec_variants": spec_variants,
         "inline_variants": inline_variants,
-        "class": mg_class,
+        "classes": mg_classes,
         "target": mg_target,
         "runs": int(os.environ.get("RUNS", "0")),
         "mt_cores": int(os.environ.get("MT_CORES", "0")),

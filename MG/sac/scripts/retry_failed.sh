@@ -7,27 +7,29 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "${SCRIPT_DIR}")"
 cd "${PROJECT_DIR}"
 
-CLASS="${CLASS:-?}"
+CLASSES="${CLASSES:-?}"
 TARGET="${TARGET:-?}"
 
-COMBOS=(
-  "fullspec inline new"
-  "fullspec inline orig"
-  "fullspec noinline new"
-  "fullspec noinline orig"
-  "nospec inline new"
-  "nospec inline orig"
-  "nospec noinline new"
-  "nospec noinline orig"
-)
+# Build combo list in the same order as job_template.sh
+COMBOS=()
+for cls in ${CLASSES}; do
+  for spec in fullspec nospec; do
+    for inl in inline noinline; do
+      for comp in new orig; do
+        COMBOS+=("${cls} ${spec} ${inl} ${comp}")
+      done
+    done
+  done
+done
 
 FAILED_INDICES=()
 for idx in "${!COMBOS[@]}"; do
   combo="${COMBOS[$idx]}"
-  spec=$(echo "$combo" | cut -d' ' -f1)
-  inl=$(echo "$combo"  | cut -d' ' -f2)
-  comp=$(echo "$combo" | cut -d' ' -f3)
-  json="results/mg-${spec}-${inl}-${comp}-${CLASS}-${TARGET}.json"
+  cls=$(echo "$combo"  | cut -d' ' -f1)
+  spec=$(echo "$combo" | cut -d' ' -f2)
+  inl=$(echo "$combo"  | cut -d' ' -f3)
+  comp=$(echo "$combo" | cut -d' ' -f4)
+  json="results/mg-${spec}-${inl}-${comp}-${cls}-${TARGET}.json"
 
   if [[ ! -f "${json}" ]]; then
     echo "  MISSING: ${json}"

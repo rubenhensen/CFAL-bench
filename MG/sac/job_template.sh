@@ -8,7 +8,7 @@
 #SBATCH --mem=__MEM__
 #SBATCH --account=__ACCOUNT__
 #SBATCH --partition=__PARTITION__
-#SBATCH --array=0-7%__ARRAY_CONCURRENCY__
+#SBATCH --array=__ARRAY_SPEC__
 __SLURM_NODE_DIRECTIVE__
 
 # =============================================================================
@@ -33,7 +33,7 @@ __SLURM_NODE_DIRECTIVE__
 set -u
 
 # -------- placeholders filled by generate_jobs.sh ---------------------------
-CLASS="__CLASS__"
+CLASSES_LIST="__CLASSES__"
 TARGET="__TARGET__"
 MT_CORES="__MT_CORES__"
 RUNS="__RUNS__"
@@ -55,22 +55,23 @@ SLURM_TIMELIMIT_REQUESTED="__TIMELIMIT__"
 TEMP_ROOT_PREFERRED="__TEMP_ROOT_PREFERRED__"
 TEMP_ROOT_FALLBACK="__TEMP_ROOT_FALLBACK__"
 
-# -------- combination lookup (fixed; always 2 specs × 2 inlines × 2 compilers)
-COMBOS=(
-  "fullspec inline new"
-  "fullspec inline orig"
-  "fullspec noinline new"
-  "fullspec noinline orig"
-  "nospec inline new"
-  "nospec inline orig"
-  "nospec noinline new"
-  "nospec noinline orig"
-)
+# -------- combination lookup (class × spec × inline × compiler, in config order)
+COMBOS=()
+for cls in ${CLASSES_LIST}; do
+  for spec in fullspec nospec; do
+    for inl in inline noinline; do
+      for comp in new orig; do
+        COMBOS+=("${cls} ${spec} ${inl} ${comp}")
+      done
+    done
+  done
+done
 
 COMBO="${COMBOS[$SLURM_ARRAY_TASK_ID]}"
-SPEC=$(echo "$COMBO" | cut -d' ' -f1)
-INLINE_MODE=$(echo "$COMBO" | cut -d' ' -f2)
-COMPILER=$(echo "$COMBO" | cut -d' ' -f3)
+CLASS=$(echo "$COMBO"       | cut -d' ' -f1)
+SPEC=$(echo "$COMBO"        | cut -d' ' -f2)
+INLINE_MODE=$(echo "$COMBO" | cut -d' ' -f3)
+COMPILER=$(echo "$COMBO"    | cut -d' ' -f4)
 
 # Select compiler-specific paths via indirect variable expansion
 eval "SAC2C_PATH=\$SAC2C_PATH_${COMPILER}"

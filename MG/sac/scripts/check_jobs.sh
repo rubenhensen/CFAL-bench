@@ -7,46 +7,48 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "${SCRIPT_DIR}")"
 cd "${PROJECT_DIR}"
 
-CLASS="${CLASS:-?}"
+CLASSES="${CLASSES:-?}"
 TARGET="${TARGET:-?}"
 
-COMBOS=(
-  "fullspec inline new"
-  "fullspec inline orig"
-  "fullspec noinline new"
-  "fullspec noinline orig"
-  "nospec inline new"
-  "nospec inline orig"
-  "nospec noinline new"
-  "nospec noinline orig"
-)
+# Build combo list in the same order as job_template.sh
+COMBOS=()
+for cls in ${CLASSES}; do
+  for spec in fullspec nospec; do
+    for inl in inline noinline; do
+      for comp in new orig; do
+        COMBOS+=("${cls} ${spec} ${inl} ${comp}")
+      done
+    done
+  done
+done
 
-printf "%-5s  %-9s  %-9s  %-6s  %s\n" "IDX" "SPEC" "INLINE" "COMP" "STATUS / FILE"
-printf '%s\n' "-----  ---------  ---------  ------  ----------------------------------------"
+printf "%-5s  %-5s  %-9s  %-9s  %-6s  %s\n" "IDX" "CLASS" "SPEC" "INLINE" "COMP" "STATUS / FILE"
+printf '%s\n' "-----  -----  ---------  ---------  ------  ----------------------------------------"
 
 ok=0; fail=0; missing=0
 for idx in "${!COMBOS[@]}"; do
   combo="${COMBOS[$idx]}"
-  spec=$(echo "$combo" | cut -d' ' -f1)
-  inl=$(echo "$combo"  | cut -d' ' -f2)
-  comp=$(echo "$combo" | cut -d' ' -f3)
-  json="results/mg-${spec}-${inl}-${comp}-${CLASS}-${TARGET}.json"
+  cls=$(echo "$combo"  | cut -d' ' -f1)
+  spec=$(echo "$combo" | cut -d' ' -f2)
+  inl=$(echo "$combo"  | cut -d' ' -f3)
+  comp=$(echo "$combo" | cut -d' ' -f4)
+  json="results/mg-${spec}-${inl}-${comp}-${cls}-${TARGET}.json"
 
   if [[ -f "${json}" ]]; then
     status="$(python3 -c "import json; d=json.load(open('${json}')); print(d.get('task_status','?'))" 2>/dev/null || echo "PARSE_ERROR")"
     if [[ "${status}" == "SUCCESS" ]]; then
       runs="$(python3 -c "import json; d=json.load(open('${json}')); print(len([r for r in d.get('runs',[]) if r.get('status')=='SUCCESS']))" 2>/dev/null || echo "?")"
-      printf "%-5s  %-9s  %-9s  %-6s  %s (%s successful runs)\n" "${idx}" "${spec}" "${inl}" "${comp}" "${status}" "${runs}"
+      printf "%-5s  %-5s  %-9s  %-9s  %-6s  %s (%s successful runs)\n" "${idx}" "${cls}" "${spec}" "${inl}" "${comp}" "${status}" "${runs}"
       ok=$((ok+1))
     else
-      printf "%-5s  %-9s  %-9s  %-6s  %s\n" "${idx}" "${spec}" "${inl}" "${comp}" "${status}"
+      printf "%-5s  %-5s  %-9s  %-9s  %-6s  %s\n" "${idx}" "${cls}" "${spec}" "${inl}" "${comp}" "${status}"
       fail=$((fail+1))
     fi
   else
-    printf "%-5s  %-9s  %-9s  %-6s  MISSING  (%s)\n" "${idx}" "${spec}" "${inl}" "${comp}" "${json}"
+    printf "%-5s  %-5s  %-9s  %-9s  %-6s  MISSING  (%s)\n" "${idx}" "${cls}" "${spec}" "${inl}" "${comp}" "${json}"
     missing=$((missing+1))
   fi
 done
 
 echo
-echo "Summary: ${ok} SUCCESS, ${fail} FAILED, ${missing} MISSING  (class=${CLASS}, target=${TARGET})"
+echo "Summary: ${ok} SUCCESS, ${fail} FAILED, ${missing} MISSING  (classes=${CLASSES}, target=${TARGET})"

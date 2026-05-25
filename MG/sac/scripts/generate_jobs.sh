@@ -11,11 +11,12 @@ cd "${PROJECT_DIR}"
 
 mkdir -p jobs
 
-ARRAY_CONCURRENCY="${SLURM_ARRAY_CONCURRENCY:-}"
-if [[ -z "${ARRAY_CONCURRENCY}" ]]; then
-  ARRAY_CONCURRENCY_STR="8"   # no cap: all 8 tasks may run simultaneously
-else
-  ARRAY_CONCURRENCY_STR="${ARRAY_CONCURRENCY}"
+NUM_CLASSES=$(echo ${CLASSES} | wc -w | tr -d ' ')
+NUM_COMBOS=$(( NUM_CLASSES * 8 ))   # 8 = 2 specs × 2 inlines × 2 compilers
+ARRAY_MAX=$(( NUM_COMBOS - 1 ))
+ARRAY_SPEC="0-${ARRAY_MAX}"
+if [[ -n "${SLURM_ARRAY_CONCURRENCY:-}" ]]; then
+  ARRAY_SPEC="${ARRAY_SPEC}%${SLURM_ARRAY_CONCURRENCY}"
 fi
 
 # Node constraint: SLURM_NODELIST wins (pin), then SLURM_EXCLUDE, then nothing.
@@ -33,7 +34,8 @@ fi
 OUT="jobs/mg.array.sh"
 
 sed \
-  -e "s|__CLASS__|${CLASS}|g" \
+  -e "s|__CLASSES__|${CLASSES}|g" \
+  -e "s|__ARRAY_SPEC__|${ARRAY_SPEC}|g" \
   -e "s|__TARGET__|${TARGET}|g" \
   -e "s|__MT_CORES__|${MT_CORES}|g" \
   -e "s|__RUNS__|${RUNS}|g" \
@@ -59,6 +61,6 @@ sed \
   job_template.sh > "${OUT}"
 
 chmod +x "${OUT}"
-echo "wrote ${OUT}  (array 0-7%${ARRAY_CONCURRENCY_STR}, class=${CLASS}, target=${TARGET})"
+echo "wrote ${OUT}  (array ${ARRAY_SPEC}, classes=${CLASSES}, target=${TARGET})"
 echo
 echo "Done. Submit with: make submit  (or 'make run' for one-command end-to-end)"

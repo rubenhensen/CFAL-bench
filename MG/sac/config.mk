@@ -30,8 +30,8 @@ COMPILERS             := new orig
 SPEC_VARIANTS         := fullspec nospec
 INLINE_VARIANTS       := inline noinline
 
-# CLASS: S W A B C D  (single value per run; change and rerun for other classes)
-CLASS                 := B
+# CLASSES: space-separated list of NAS classes to run in one submission
+CLASSES               := A B C
 # TARGET: seq mt_pth cuda_man
 TARGET                := mt_pth
 MT_CORES              := 32

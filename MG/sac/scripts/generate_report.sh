@@ -35,16 +35,16 @@ cfg         = meta.get("config", {})
 compilers   = cfg.get("compilers", ["new", "orig"])
 spec_vars   = cfg.get("spec_variants", ["fullspec", "nospec"])
 inline_vars = cfg.get("inline_variants", ["inline", "noinline"])
-mg_class    = cfg.get("class", "?")
+mg_classes  = cfg.get("classes", ["?"])
 mg_target   = cfg.get("target", "?")
 
-# Per-(spec, inline, compiler) → list of gflops values (successful runs only)
+# Per-(class, spec, inline, compiler) → list of gflops values (successful runs only)
 buckets = {}
 with open(CSV) as f:
     for row in csv.DictReader(f):
         if row["status"] != "SUCCESS":
             continue
-        key = (row["spec"], row["inline"], row["compiler"])
+        key = (row["class"], row["spec"], row["inline"], row["compiler"])
         try:
             g = float(row["gflops"])
         except (ValueError, TypeError):
@@ -64,37 +64,35 @@ def cell_stats(vals):
         "status_label": "SUCCESS",
     }
 
-# Build full table: (spec, inline, compiler) → stats
-table = {}
-for s in spec_vars:
-    for i in inline_vars:
-        for c in compilers:
-            table[(s, i, c)] = cell_stats(buckets.get((s, i, c), []))
+# Build full table and t-tests per class
+table = {}         # (cls, spec, inline, compiler) → stats
+ttest_results = {} # (cls, spec, inline) → ttest
 
-# Pairwise t-tests: new vs orig, per (spec, inline)
-ttest_results = {}
-for s in spec_vars:
-    for i in inline_vars:
-        new_vals  = buckets.get((s, i, "new"),  [])
-        orig_vals = buckets.get((s, i, "orig"), [])
-        if len(new_vals) >= 2 and len(orig_vals) >= 2:
-            t, p = scipy_stats.ttest_ind(new_vals, orig_vals)
-            mean_new = float(np.mean(new_vals))
-            mean_orig = float(np.mean(orig_vals))
-            ttest_results[(s, i)] = {
-                "t_stat":     float(t),
-                "p_value":    float(p),
-                "significant": p < 0.05,
-                "mean_new":   mean_new,
-                "mean_orig":  mean_orig,
-                "speedup":    mean_new / mean_orig if mean_orig else None,
-                "winner":     "TIE" if p >= 0.05 else ("NEW" if mean_new > mean_orig else "ORIG"),
-            }
+for cls in mg_classes:
+    for s in spec_vars:
+        for i in inline_vars:
+            for c in compilers:
+                table[(cls, s, i, c)] = cell_stats(buckets.get((cls, s, i, c), []))
+            new_vals  = buckets.get((cls, s, i, "new"),  [])
+            orig_vals = buckets.get((cls, s, i, "orig"), [])
+            if len(new_vals) >= 2 and len(orig_vals) >= 2:
+                t, p = scipy_stats.ttest_ind(new_vals, orig_vals)
+                mean_new = float(np.mean(new_vals))
+                mean_orig = float(np.mean(orig_vals))
+                ttest_results[(cls, s, i)] = {
+                    "t_stat":      float(t),
+                    "p_value":     float(p),
+                    "significant": p < 0.05,
+                    "mean_new":    mean_new,
+                    "mean_orig":   mean_orig,
+                    "speedup":     mean_new / mean_orig if mean_orig else None,
+                    "winner":      "TIE" if p >= 0.05 else ("NEW" if mean_new > mean_orig else "ORIG"),
+                }
 
 with open(ANALYSIS_JSON, "w") as f:
     json.dump({
-        "per_variant": {f"{s}/{i}/{c}": v for (s, i, c), v in table.items()},
-        "ttest_new_vs_orig": {f"{s}/{i}": v for (s, i), v in ttest_results.items()},
+        "per_variant": {f"{cls}/{s}/{i}/{c}": v for (cls, s, i, c), v in table.items()},
+        "ttest_new_vs_orig": {f"{cls}/{s}/{i}": v for (cls, s, i), v in ttest_results.items()},
         "config":    cfg,
         "compilers": meta.get("compilers", {}),
         "stdlib":    meta.get("stdlib", {}),
@@ -112,51 +110,50 @@ w("# MG Benchmark — Report")
 w("")
 w(f"_Generated: {datetime.now().isoformat(timespec='seconds')}_")
 w("")
-w(f"Class: **{mg_class}**  Target: **{mg_target}**  Node(s): **{nodes_str}**")
+w(f"Classes: **{', '.join(mg_classes)}**  Target: **{mg_target}**  Node(s): **{nodes_str}**")
 w("")
 
-# Main results table
-w("## GFLOP/s by variant (new vs orig compiler)")
-w("")
-hdr = ["Spec", "Inline"] + [f"{c} mean" for c in compilers] + [f"{c} std" for c in compilers] + ["Speedup", "Significant?", "Winner"]
-w("| " + " | ".join(hdr) + " |")
-w("|" + "|".join("---" for _ in hdr) + "|")
-for s in spec_vars:
+for cls in mg_classes:
+    w(f"## Class {cls} — GFLOP/s by variant (new vs orig compiler)")
+    w("")
+    hdr = ["Spec", "Inline"] + [f"{c} mean" for c in compilers] + [f"{c} std" for c in compilers] + ["Speedup", "Significant?", "Winner"]
+    w("| " + " | ".join(hdr) + " |")
+    w("|" + "|".join("---" for _ in hdr) + "|")
+    for s in spec_vars:
+        for i in inline_vars:
+            row = [s, i]
+            for c in compilers:
+                st = table[(cls, s, i, c)]
+                row.append(f"{st['mean']:.4f}" if st["n"] else st["status_label"])
+            for c in compilers:
+                st = table[(cls, s, i, c)]
+                row.append(f"{st['std']:.4f}" if st["n"] >= 2 else "—")
+            tt = ttest_results.get((cls, s, i))
+            if tt:
+                row.append(f"{tt['speedup']:.4f}" if tt["speedup"] else "?")
+                row.append("YES" if tt["significant"] else "NO")
+                row.append(tt["winner"])
+            else:
+                row += ["—", "—", "—"]
+            w("| " + " | ".join(row) + " |")
+    w("")
+
+    w(f"### Class {cls} — cross-comparison: nospec/new vs fullspec/orig")
+    w("")
+    w("| Inline | nospec/new mean | fullspec/orig mean | Speedup | p-value | Winner |")
+    w("|--------|----------------|-------------------|---------|---------|--------|")
     for i in inline_vars:
-        row = [s, i]
-        for c in compilers:
-            st = table[(s, i, c)]
-            row.append(f"{st['mean']:.4f}" if st["n"] else st["status_label"])
-        for c in compilers:
-            st = table[(s, i, c)]
-            row.append(f"{st['std']:.4f}" if st["n"] >= 2 else "—")
-        tt = ttest_results.get((s, i))
-        if tt:
-            row.append(f"{tt['speedup']:.4f}" if tt["speedup"] else "?")
-            row.append("YES" if tt["significant"] else "NO")
-            row.append(tt["winner"])
+        new_vals  = buckets.get((cls, "nospec",   i, "new"),  [])
+        orig_vals = buckets.get((cls, "fullspec",  i, "orig"), [])
+        if len(new_vals) >= 2 and len(orig_vals) >= 2:
+            t, p = scipy_stats.ttest_ind(new_vals, orig_vals)
+            mn = float(np.mean(new_vals)); mo = float(np.mean(orig_vals))
+            sp = mn / mo if mo else float("nan")
+            winner = "TIE" if p >= 0.05 else ("nospec/new" if mn > mo else "fullspec/orig")
+            w(f"| {i} | {mn:.4f} | {mo:.4f} | {sp:.4f} | {p:.4f} | {winner} |")
         else:
-            row += ["—", "—", "—"]
-        w("| " + " | ".join(row) + " |")
-w("")
-
-# Cross-comparison: nospec_new vs fullspec_orig
-w("## Cross-comparison: nospec/new vs fullspec/orig (key thesis claim)")
-w("")
-w("| Inline | nospec/new mean | fullspec/orig mean | Speedup | p-value | Winner |")
-w("|--------|----------------|-------------------|---------|---------|--------|")
-for i in inline_vars:
-    new_vals  = buckets.get(("nospec",  i, "new"),  [])
-    orig_vals = buckets.get(("fullspec", i, "orig"), [])
-    if len(new_vals) >= 2 and len(orig_vals) >= 2:
-        t, p = scipy_stats.ttest_ind(new_vals, orig_vals)
-        mn = float(np.mean(new_vals)); mo = float(np.mean(orig_vals))
-        sp = mn / mo if mo else float("nan")
-        winner = "TIE" if p >= 0.05 else ("nospec/new" if mn > mo else "fullspec/orig")
-        w(f"| {i} | {mn:.4f} | {mo:.4f} | {sp:.4f} | {p:.4f} | {winner} |")
-    else:
-        w(f"| {i} | — | — | — | — | — |")
-w("")
+            w(f"| {i} | — | — | — | — | — |")
+    w("")
 
 # Reproducibility footer
 w("## Reproducibility metadata")
@@ -199,7 +196,7 @@ w(f"- Branch: `{stdlib.get('branch','')}`")
 w("")
 w("### Benchmark configuration")
 w("")
-w(f"- Class: `{mg_class}`   Target: `{mg_target}`")
+w(f"- Classes: `{' '.join(mg_classes)}`   Target: `{mg_target}`")
 w(f"- Compilers: `{' '.join(compilers)}`")
 w(f"- Spec variants: `{' '.join(spec_vars)}`")
 w(f"- Inline variants: `{' '.join(inline_vars)}`")
@@ -219,9 +216,9 @@ with open(REPORT_MD, "w") as f:
     f.write("\n".join(out))
 
 # --------------------- Thesis-ready Typst snippet ---------------------------
-# Produces a table: rows = (spec, inline), columns = new mean, orig mean, speedup
-new_commit  = (meta.get("compilers",{}).get("new",{}).get("sac2c_commit","") or "?")[:12]
-orig_commit = (meta.get("compilers",{}).get("orig",{}).get("sac2c_commit","") or "?")[:12]
+# One #figure per class; rows = (spec, inline), columns = new mean, orig mean, speedup
+new_commit    = (meta.get("compilers",{}).get("new",{}).get("sac2c_commit","") or "?")[:12]
+orig_commit   = (meta.get("compilers",{}).get("orig",{}).get("sac2c_commit","") or "?")[:12]
 stdlib_commit = (stdlib.get("commit","") or "?")[:12]
 n_runs = cfg.get("runs","?")
 
@@ -229,31 +226,34 @@ snippet = []; sw = snippet.append
 sw("// Auto-generated by CFAL-bench/MG/sac/scripts/generate_report.sh")
 sw("// Paste into the thesis; update caption wording if needed.")
 sw("")
-sw("#figure(")
-sw("  table(")
-sw("    columns: 6,")
-sw("    align: (left, left, center, center, center, center),")
-sw("    table.header(")
-sw("      [Spec], [Inline], [New (GFLOP/s)], [Orig (GFLOP/s)], [Speedup], [p < 0.05?]")
-sw("    ),")
-for s in spec_vars:
-    for i in inline_vars:
-        new_st  = table[(s, i, "new")]
-        orig_st = table[(s, i, "orig")]
-        tt = ttest_results.get((s, i))
-        new_val  = f"{new_st['mean']:.3f}"  if new_st["n"]  else "—"
-        orig_val = f"{orig_st['mean']:.3f}" if orig_st["n"] else "—"
-        speedup  = f"{tt['speedup']:.3f}"   if tt and tt["speedup"] else "—"
-        sig      = "YES" if tt and tt["significant"] else ("NO" if tt else "—")
-        sw(f"    [{s}], [{i}], [{new_val}], [{orig_val}], [{speedup}], [{sig}],")
-sw("  ),")
-sw(f"  caption: [MG benchmark CLASS={mg_class}, target={mg_target} on {nodes_str}, ")
-sw(f"           N={n_runs} runs per variant. GFLOP/s = higher is better. ")
-sw(f"           Speedup = new / orig. Significance: Welch's t-test at 95 %%. ")
-sw(f"           Modified compiler commit `{new_commit}`; baseline commit `{orig_commit}`; ")
-sw(f"           Stdlib commit `{stdlib_commit}`.],")
-sw(") <mg-gflops-table>")
-sw("")
+
+for cls in mg_classes:
+    sw(f"// ----- Class {cls} -----")
+    sw("#figure(")
+    sw("  table(")
+    sw("    columns: 6,")
+    sw("    align: (left, left, center, center, center, center),")
+    sw("    table.header(")
+    sw("      [Spec], [Inline], [New (GFLOP/s)], [Orig (GFLOP/s)], [Speedup], [p < 0.05?]")
+    sw("    ),")
+    for s in spec_vars:
+        for i in inline_vars:
+            new_st  = table[(cls, s, i, "new")]
+            orig_st = table[(cls, s, i, "orig")]
+            tt = ttest_results.get((cls, s, i))
+            new_val  = f"{new_st['mean']:.3f}"  if new_st["n"]  else "—"
+            orig_val = f"{orig_st['mean']:.3f}" if orig_st["n"] else "—"
+            speedup  = f"{tt['speedup']:.3f}"   if tt and tt["speedup"] else "—"
+            sig      = "YES" if tt and tt["significant"] else ("NO" if tt else "—")
+            sw(f"    [{s}], [{i}], [{new_val}], [{orig_val}], [{speedup}], [{sig}],")
+    sw("  ),")
+    sw(f"  caption: [MG benchmark CLASS={cls}, target={mg_target} on {nodes_str}, ")
+    sw(f"           N={n_runs} runs per variant. GFLOP/s = higher is better. ")
+    sw(f"           Speedup = new / orig. Significance: Welch's t-test at 95 %%. ")
+    sw(f"           Modified compiler commit `{new_commit}`; baseline commit `{orig_commit}`; ")
+    sw(f"           Stdlib commit `{stdlib_commit}`.],")
+    sw(f") <mg-gflops-table-{cls.lower()}>")
+    sw("")
 
 with open(SNIPPET_TYP, "w") as f:
     f.write("\n".join(snippet) + "\n")

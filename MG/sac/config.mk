@@ -64,7 +64,7 @@ SLURM_ARRAY_CONCURRENCY := 4
 #   SLURM_NODELIST := cn99    # pin to one specific node — best for validity
 #   SLURM_EXCLUDE  := cn58    # exclude known-slow nodes — keeps parallelism
 # Leave both empty to let SLURM decide (NOT recommended for benchmark runs).
-SLURM_NODELIST        :=
+SLURM_NODELIST        := cn99
 SLURM_EXCLUDE         :=
 
 # Per-task scratch root for builds + isolated $HOME (avoids ~/.sac2crc race).

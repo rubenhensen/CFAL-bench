@@ -82,7 +82,7 @@ for cls in mg_classes:
                 ttest_results[(cls, s, i)] = {
                     "t_stat":      float(t),
                     "p_value":     float(p),
-                    "significant": p < 0.05,
+                    "significant": bool(p < 0.05),
                     "mean_new":    mean_new,
                     "mean_orig":   mean_orig,
                     "speedup":     mean_new / mean_orig if mean_orig else None,

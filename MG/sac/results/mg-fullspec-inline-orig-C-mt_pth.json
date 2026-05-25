@@ -1,0 +1,182 @@
+{
+  "array_task_id": 17,
+  "build_peak_rss_kb": 1807436.0,
+  "build_status": "SUCCESS",
+  "build_time_seconds": 40.381142,
+  "class": "C",
+  "compiler": "orig",
+  "cpu_model": "Intel(R) Xeon(R) CPU E5-2630 v3 @ 2.40GHz",
+  "finished_at": "2026-05-25T19:25:48+00:00",
+  "gcc_version": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "inline": "inline",
+  "job_id": "1642540",
+  "kernel": "6.17.0-14-generic",
+  "mt_cores": 4,
+  "node": "cn99",
+  "os_release": "Ubuntu 24.04.4 LTS",
+  "runs": [
+    {
+      "error_message": null,
+      "gflops": 2.94038,
+      "run": 1,
+      "status": "SUCCESS",
+      "wall_seconds": 54.107735
+    },
+    {
+      "error_message": null,
+      "gflops": 2.91626,
+      "run": 2,
+      "status": "SUCCESS",
+      "wall_seconds": 54.578783
+    },
+    {
+      "error_message": null,
+      "gflops": 2.904601,
+      "run": 3,
+      "status": "SUCCESS",
+      "wall_seconds": 54.795541
+    },
+    {
+      "error_message": null,
+      "gflops": 2.9279,
+      "run": 4,
+      "status": "SUCCESS",
+      "wall_seconds": 54.466567
+    },
+    {
+      "error_message": null,
+      "gflops": 2.914195,
+      "run": 5,
+      "status": "SUCCESS",
+      "wall_seconds": 54.602123
+    },
+    {
+      "error_message": null,
+      "gflops": 2.933267,
+      "run": 6,
+      "status": "SUCCESS",
+      "wall_seconds": 54.826999
+    },
+    {
+      "error_message": null,
+      "gflops": 3.205997,
+      "run": 7,
+      "status": "SUCCESS",
+      "wall_seconds": 49.711588
+    },
+    {
+      "error_message": null,
+      "gflops": 3.30225,
+      "run": 8,
+      "status": "SUCCESS",
+      "wall_seconds": 48.301214
+    },
+    {
+      "error_message": null,
+      "gflops": 2.282892,
+      "run": 9,
+      "status": "SUCCESS",
+      "wall_seconds": 69.500885
+    },
+    {
+      "error_message": null,
+      "gflops": 2.287594,
+      "run": 10,
+      "status": "SUCCESS",
+      "wall_seconds": 69.535766
+    },
+    {
+      "error_message": null,
+      "gflops": 2.237096,
+      "run": 11,
+      "status": "SUCCESS",
+      "wall_seconds": 70.801738
+    },
+    {
+      "error_message": null,
+      "gflops": 2.278371,
+      "run": 12,
+      "status": "SUCCESS",
+      "wall_seconds": 69.607855
+    },
+    {
+      "error_message": null,
+      "gflops": 2.217991,
+      "run": 13,
+      "status": "SUCCESS",
+      "wall_seconds": 71.413647
+    },
+    {
+      "error_message": null,
+      "gflops": 2.27267,
+      "run": 14,
+      "status": "SUCCESS",
+      "wall_seconds": 69.744523
+    },
+    {
+      "error_message": null,
+      "gflops": 2.218801,
+      "run": 15,
+      "status": "SUCCESS",
+      "wall_seconds": 71.861237
+    },
+    {
+      "error_message": null,
+      "gflops": 2.26676,
+      "run": 16,
+      "status": "SUCCESS",
+      "wall_seconds": 69.963131
+    },
+    {
+      "error_message": null,
+      "gflops": 2.249161,
+      "run": 17,
+      "status": "SUCCESS",
+      "wall_seconds": 70.412449
+    },
+    {
+      "error_message": null,
+      "gflops": 2.281809,
+      "run": 18,
+      "status": "SUCCESS",
+      "wall_seconds": 69.493327
+    },
+    {
+      "error_message": null,
+      "gflops": 2.239282,
+      "run": 19,
+      "status": "SUCCESS",
+      "wall_seconds": 70.827554
+    },
+    {
+      "error_message": null,
+      "gflops": 2.294821,
+      "run": 20,
+      "status": "SUCCESS",
+      "wall_seconds": 69.160329
+    }
+  ],
+  "runs_requested": 20,
+  "sac2c_branch": "develop",
+  "sac2c_commit": "ab3bbecacf1a978daf64b88cabc4b9df53d4b2e8",
+  "sac2c_describe": "v2.1.0-PuurGeluk-269-gab3bbecac",
+  "sac2c_path": "/home/rhensen/sacoriginal/sac2c/build_p/sac2c_p",
+  "sac2c_version_raw": "sac2c 2.1.0-PuurGeluk-269-gab3bb|build-type: RELEASE|built-by: \"rhensen\" at 2026-05-24T17:37:57|",
+  "slurm_cpus_per_task": 4,
+  "slurm_mem_requested": "14G",
+  "slurm_partition": "cncz",
+  "slurm_timelimit_requested": "00:30:00",
+  "source_file": "/home/rhensen/CFAL-bench/MG/sac/src/MG.sac",
+  "spec": "fullspec",
+  "started_at": "2026-05-25T19:03:58+00:00",
+  "stdlib_branch": "master",
+  "stdlib_build": "/home/rhensen/Stdlib/build-orig",
+  "stdlib_commit": "9afffd46db51fd6877048f34fbd6c5a5de5eede5",
+  "stdlib_src": "/home/rhensen/Stdlib",
+  "target": "mt_pth",
+  "task_error_message": "",
+  "task_exit_code": 0,
+  "task_status": "SUCCESS",
+  "temp_build_root": "/scratch/rhensen",
+  "total_memory_kb": 264023620
+}

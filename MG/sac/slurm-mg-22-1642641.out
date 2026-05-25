@@ -1,0 +1,101 @@
+========================================================================
+MG Benchmark — task 22: nospec/noinline/new
+========================================================================
+Compiler   : new  (/home/rhensen/sac2c/build_p/sac2c_p)
+Variant    : nospec / noinline
+Class      : C   Target: mt_pth   Cores: 4
+Source     : /home/rhensen/CFAL-bench/MG/sac/src/MG.sac
+Stdlib     : /home/rhensen/Stdlib/build-new
+Runs       : 20
+Job ID     : 1642641 (task 22)
+Node       : cn99
+========================================================================
+Temp root  : /scratch/rhensen
+Task root  : /scratch/rhensen/mg_bench_nospec_noinline_new_C_mt_pth_1642641_22
+
+--- Build: numactl --interleave all sac2c ... ---
+Build exit : 0   wall: 28.781551s   RSS: 1502292kB
+
+--- Benchmark: 20 runs ---
+
+  run 1/20
+  gflops=1.541127  wall=102.218672s
+
+  run 2/20
+  gflops=1.531130  wall=102.978326s
+
+  run 3/20
+  gflops=1.503280  wall=104.845858s
+
+  run 4/20
+  gflops=1.533450  wall=102.727602s
+
+  run 5/20
+  gflops=1.544596  wall=102.000236s
+
+  run 6/20
+  gflops=1.551053  wall=101.576058s
+
+  run 7/20
+  gflops=1.566569  wall=100.567009s
+
+  run 8/20
+  gflops=1.538584  wall=102.400830s
+
+  run 9/20
+  gflops=1.547289  wall=101.836210s
+
+  run 10/20
+  gflops=1.544795  wall=102.135312s
+
+  run 11/20
+  gflops=1.578931  wall=100.337779s
+
+  run 12/20
+  gflops=1.573442  wall=100.265516s
+
+  run 13/20
+  gflops=1.584295  wall=99.728379s
+
+  run 14/20
+  gflops=1.553826  wall=101.520733s
+
+  run 15/20
+  gflops=1.589666  wall=99.281503s
+
+  run 16/20
+  gflops=1.593574  wall=99.045649s
+
+  run 17/20
+  gflops=1.569379  wall=100.534772s
+
+  run 18/20
+
+
+###############################################################################
+Science Cluster
+Job 1642645 for user 'rhensen'
+Finished at: Mon May 25 20:58:40 UTC 2026
+
+Job details:
+============
+
+Name                : mg-bench
+User                : rhensen
+Partition           : cncz
+Nodes               : cn99
+Cores               : 4
+State               : TIMEOUT,CANCELLED
+Submit              : 2026-05-25T20:17:05
+Start               : 2026-05-25T20:28:11
+End                 : 2026-05-25T20:58:39
+Reserved walltime   : 00:30:00
+Used walltime       : 00:30:28
+Used CPU time       : 01:58:48 (efficiency: 97.48%)
+% User (Computation): 98.88%
+% System (I/O)      :  1.13%
+Mem reserved        : 14G
+Max Mem used        : 5.85G (cn99)
+Max Disk Write      : 19.22M (cn99)
+Max Disk Read       : 91.74M (cn99)
+

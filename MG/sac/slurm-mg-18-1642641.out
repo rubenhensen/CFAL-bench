@@ -1,0 +1,98 @@
+========================================================================
+MG Benchmark — task 18: fullspec/noinline/new
+========================================================================
+Compiler   : new  (/home/rhensen/sac2c/build_p/sac2c_p)
+Variant    : fullspec / noinline
+Class      : C   Target: mt_pth   Cores: 4
+Source     : /home/rhensen/CFAL-bench/MG/sac/src/MG.sac
+Stdlib     : /home/rhensen/Stdlib/build-new
+Runs       : 20
+Job ID     : 1642641 (task 18)
+Node       : cn99
+========================================================================
+Temp root  : /scratch/rhensen
+Task root  : /scratch/rhensen/mg_bench_fullspec_noinline_new_C_mt_pth_1642641_18
+
+--- Build: numactl --interleave all sac2c ... ---
+Build exit : 0   wall: 31.817137s   RSS: 1586144kB
+
+--- Benchmark: 20 runs ---
+
+  run 1/20
+  gflops=1.740548  wall=90.708376s
+
+  run 2/20
+  gflops=1.736491  wall=90.936734s
+
+  run 3/20
+  gflops=1.772727  wall=89.062846s
+
+  run 4/20
+  gflops=1.735870  wall=90.943831s
+
+  run 5/20
+  gflops=1.798079  wall=87.913108s
+
+  run 6/20
+  gflops=1.761246  wall=89.622651s
+
+  run 7/20
+  gflops=1.748581  wall=90.495218s
+
+  run 8/20
+  gflops=1.699216  wall=93.134564s
+
+  run 9/20
+  gflops=1.304897  wall=120.931395s
+
+  run 10/20
+  gflops=1.296717  wall=121.810716s
+
+  run 11/20
+  gflops=1.312885  wall=120.175426s
+
+  run 12/20
+  gflops=1.305614  wall=120.790011s
+
+  run 13/20
+  gflops=1.310836  wall=120.273543s
+
+  run 14/20
+  gflops=1.312301  wall=120.176730s
+
+  run 15/20
+  gflops=1.314918  wall=119.993000s
+
+  run 16/20
+  gflops=1.317331  wall=119.763072s
+
+  run 17/20
+
+
+###############################################################################
+Science Cluster
+Job 1642642 for user 'rhensen'
+Finished at: Mon May 25 20:47:08 UTC 2026
+
+Job details:
+============
+
+Name                : mg-bench
+User                : rhensen
+Partition           : cncz
+Nodes               : cn99
+Cores               : 4
+State               : CANCELLED,TIMEOUT
+Submit              : 2026-05-25T20:17:05
+Start               : 2026-05-25T20:17:06
+End                 : 2026-05-25T20:47:07
+Reserved walltime   : 00:30:00
+Used walltime       : 00:30:01
+Used CPU time       : 01:56:22 (efficiency: 96.92%)
+% User (Computation): 98.44%
+% System (I/O)      :  1.56%
+Mem reserved        : 14G
+Max Mem used        : 5.85G (cn99)
+Max Disk Write      : 19.32M (cn99)
+Max Disk Read       : 98.21M (cn99)
+

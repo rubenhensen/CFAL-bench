@@ -1,0 +1,45 @@
+========================================================================
+MG Benchmark — task 2: fullspec/noinline/new
+========================================================================
+Compiler   : new  (/home/rhensen/sac2c/build_p/sac2c_p)
+Variant    : fullspec / noinline
+Class      : A   Target: mt_pth   Cores: 4
+Source     : /home/rhensen/CFAL-bench/MG/sac/src/MG.sac
+Stdlib     : /home/rhensen/Stdlib/build-new
+Runs       : 20
+Job ID     : 1642536 (task 2)
+Node       : cn99
+========================================================================
+Temp root  : /scratch/rhensen
+Task root  : /scratch/rhensen/mg_bench_fullspec_noinline_new_A_mt_pth_1642536_2
+
+--- Build: numactl --interleave all sac2c ... ---
+
+
+###############################################################################
+Science Cluster
+Job 1642539 for user 'rhensen'
+Finished at: Mon May 25 18:49:11 UTC 2026
+
+Job details:
+============
+
+Name                : mg-bench
+User                : rhensen
+Partition           : cncz
+Nodes               : cn99
+Cores               : 4
+State               : CANCELLED by 34220,CANCELLED
+Submit              : 2026-05-25T18:47:06
+Start               : 2026-05-25T18:49:03
+End                 : 2026-05-25T18:49:10
+Reserved walltime   : 00:30:00
+Used walltime       : 00:00:07
+Used CPU time       : 00:00:04 (efficiency: 15.20%)
+% User (Computation): 95.82%
+% System (I/O)      :  4.16%
+Mem reserved        : 14G
+Max Mem used        : 373.42M (cn99)
+Max Disk Write      : 0.00  (cn99)
+Max Disk Read       : 0.00  (cn99)
+

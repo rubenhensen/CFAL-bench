@@ -1,0 +1,30 @@
+========================================================================
+MG Benchmark — task 23: nospec/noinline/orig
+========================================================================
+Compiler   : orig  (/home/rhensen/sacoriginal/sac2c/build_p/sac2c_p)
+Variant    : nospec / noinline
+Class      : C   Target: mt_pth   Cores: 4
+Source     : /home/rhensen/CFAL-bench/MG/sac/src/MG.sac
+Stdlib     : /home/rhensen/Stdlib/build-orig
+Runs       : 20
+Job ID     : 1642641 (task 23)
+Node       : cn99
+========================================================================
+Temp root  : /scratch/rhensen
+Task root  : /scratch/rhensen/mg_bench_nospec_noinline_orig_C_mt_pth_1642641_23
+
+--- Build: numactl --interleave all sac2c ... ---
+Build exit : 0   wall: 26.051414s   RSS: 692256kB
+
+--- Benchmark: 20 runs ---
+
+  run 1/20
+  gflops=0.398237  wall=392.553638s
+
+  run 2/20
+  gflops=0.413274  wall=378.009379s
+
+  run 3/20
+  gflops=0.447193  wall=349.482311s
+
+  run 4/20

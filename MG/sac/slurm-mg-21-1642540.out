@@ -1,0 +1,68 @@
+========================================================================
+MG Benchmark — task 21: nospec/inline/orig
+========================================================================
+Compiler   : orig  (/home/rhensen/sacoriginal/sac2c/build_p/sac2c_p)
+Variant    : nospec / inline
+Class      : C   Target: mt_pth   Cores: 4
+Source     : /home/rhensen/CFAL-bench/MG/sac/src/MG.sac
+Stdlib     : /home/rhensen/Stdlib/build-orig
+Runs       : 20
+Job ID     : 1642540 (task 21)
+Node       : cn99
+========================================================================
+Temp root  : /scratch/rhensen
+Task root  : /scratch/rhensen/mg_bench_nospec_inline_orig_C_mt_pth_1642540_21
+
+--- Build: numactl --interleave all sac2c ... ---
+Build exit : 0   wall: 17.165869s   RSS: 621728kB
+
+--- Benchmark: 20 runs ---
+
+  run 1/20
+  gflops=0.519935  wall=301.004309s
+
+  run 2/20
+  gflops=0.515627  wall=303.381383s
+
+  run 3/20
+  gflops=0.519700  wall=301.097412s
+
+  run 4/20
+  gflops=0.519088  wall=301.183654s
+
+  run 5/20
+  gflops=0.527113  wall=296.922322s
+
+  run 6/20
+  gflops=0.536465  wall=291.746056s
+
+  run 7/20
+
+
+###############################################################################
+Science Cluster
+Job 1642638 for user 'rhensen'
+Finished at: Mon May 25 19:56:06 UTC 2026
+
+Job details:
+============
+
+Name                : mg-bench
+User                : rhensen
+Partition           : cncz
+Nodes               : cn99
+Cores               : 4
+State               : TIMEOUT,CANCELLED
+Submit              : 2026-05-25T18:49:21
+Start               : 2026-05-25T19:25:48
+End                 : 2026-05-25T19:56:05
+Reserved walltime   : 00:30:00
+Used walltime       : 00:30:17
+Used CPU time       : 01:58:53 (efficiency: 98.14%)
+% User (Computation): 99.41%
+% System (I/O)      :  0.59%
+Mem reserved        : 14G
+Max Mem used        : 6.70G (cn99)
+Max Disk Write      : 11.52M (cn99)
+Max Disk Read       : 31.11M (cn99)
+

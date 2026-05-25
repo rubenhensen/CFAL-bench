@@ -6,65 +6,110 @@
 #   - 2 inlining modes: inline (-DISINLINE), noinline
 #   - 3 build targets: seq, mt_pth, cuda_man
 #
-# Statistical analysis:
-#   - Performs Student's t-test comparing new vs orig compiler (95% confidence)
-#   - Outputs: T-statistic, p-value, significance, means, speedup, winner (TIE if not significant)
-#   - Requires: make venv (sets up Python with scipy/numpy)
+# SLURM one-command run (recommended on the cluster):
+#   make            # = make run: jobs → submit → wait → retry → collect → report
+#
+# Local run (for testing):
+#   make SLURM_ENABLE=1 benchmark   (old inline SLURM mode, still works)
+#   make benchmark                   (purely local, no SLURM)
+#
+# Configure in config.mk before running.
 
-# Configuration
-COMPILERS := new orig
-SAC2C_new := /home/ruben/Repos/sac2c/build_p/sac2c_p
+include config.mk
+
+# =============================================================================
+# SLURM orchestration targets (the new pipeline)
+# =============================================================================
+
+export CLASS COMPILERS SPEC_VARIANTS INLINE_VARIANTS TARGET MT_CORES RUNS SAC2CFLAGS
+export SAC2C_NEW_SLURM SAC2C_NEW_DIR_SLURM SAC2C_NEW_SRC_SLURM STDLIB_BUILD_NEW
+export SAC2C_ORIG_SLURM SAC2C_ORIG_DIR_SLURM SAC2C_ORIG_SRC_SLURM STDLIB_BUILD_ORIG
+export STDLIB_SRC_SLURM
+export SLURM_ACCOUNT SLURM_PARTITION SLURM_CPUS SLURM_MEM SLURM_TIMELIMIT
+export SLURM_ARRAY_CONCURRENCY SLURM_NODELIST SLURM_EXCLUDE
+export TEMP_ROOT_PREFERRED TEMP_ROOT_FALLBACK MAX_RETRIES
+export PYTHON VENV_DIR
+
+run: venv
+	bash scripts/run_all.sh
+
+jobs:
+	bash scripts/generate_jobs.sh
+
+submit:
+	bash scripts/submit_all.sh
+
+wait:
+	bash scripts/wait_jobs.sh
+
+status:
+	bash scripts/check_jobs.sh
+
+retry:
+	bash scripts/retry_failed.sh
+
+collect:
+	bash scripts/collect_results.sh
+
+report: venv
+	bash scripts/generate_report.sh
+
+print-config:
+	@echo "=== MG Benchmark configuration ==="
+	@echo "  CLASS             = $(CLASS)"
+	@echo "  TARGET            = $(TARGET)"
+	@echo "  MT_CORES          = $(MT_CORES)"
+	@echo "  RUNS              = $(RUNS)"
+	@echo "  COMPILERS         = $(COMPILERS)"
+	@echo "  SPEC_VARIANTS     = $(SPEC_VARIANTS)"
+	@echo "  INLINE_VARIANTS   = $(INLINE_VARIANTS)"
+	@echo "  SAC2CFLAGS        = $(SAC2CFLAGS)"
+	@echo "  SAC2C_NEW_SLURM   = $(SAC2C_NEW_SLURM)"
+	@echo "  SAC2C_ORIG_SLURM  = $(SAC2C_ORIG_SLURM)"
+	@echo "  STDLIB_BUILD_NEW  = $(STDLIB_BUILD_NEW)"
+	@echo "  STDLIB_BUILD_ORIG = $(STDLIB_BUILD_ORIG)"
+	@echo "  SLURM_PARTITION   = $(SLURM_PARTITION)"
+	@echo "  SLURM_ACCOUNT     = $(SLURM_ACCOUNT)"
+	@echo "  SLURM_CPUS        = $(SLURM_CPUS)"
+	@echo "  SLURM_MEM         = $(SLURM_MEM)"
+	@echo "  SLURM_TIMELIMIT   = $(SLURM_TIMELIMIT)"
+	@echo "  SLURM_NODELIST    = $(SLURM_NODELIST)"
+	@echo "  SLURM_EXCLUDE     = $(SLURM_EXCLUDE)"
+	@echo "  MAX_RETRIES       = $(MAX_RETRIES)"
+
+# =============================================================================
+# Local build/benchmark targets (original workflow — still works)
+# =============================================================================
+
+# Local paths for non-SLURM builds (edit for your machine)
+SAC2C_new  := /home/ruben/Repos/sac2c/build_p/sac2c_p
 SAC2C_orig := /home/ruben/Repos/sacoriginal/sac2c/build_p/sac2c_p
-# Library and tree paths for prelude and stdlib
-LIBFLAGS_new := -L /home/ruben/Repos/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude -T /home/ruben/Repos/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude -L /home/ruben/Repos/Stdlib/build/lib -T /home/ruben/Repos/Stdlib/build/lib
-LIBFLAGS_orig := -L /home/ruben/Repos/sacoriginal/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude -T /home/ruben/Repos/sacoriginal/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude -L /home/ruben/Repos/sacoriginal/Stdlib/build/lib -T /home/ruben/Repos/sacoriginal/Stdlib/build/lib
-SPEC_VARIANTS := fullspec nospec
-INLINE_VARIANTS := inline noinline
+LIBFLAGS_new  := -L /home/ruben/Repos/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude \
+                 -T /home/ruben/Repos/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude \
+                 -L /home/ruben/Repos/Stdlib/build/lib -T /home/ruben/Repos/Stdlib/build/lib
+LIBFLAGS_orig := -L /home/ruben/Repos/sacoriginal/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude \
+                 -T /home/ruben/Repos/sacoriginal/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude \
+                 -L /home/ruben/Repos/sacoriginal/Stdlib/build/lib -T /home/ruben/Repos/sacoriginal/Stdlib/build/lib
+
 VARIANT_COMBINATIONS := $(foreach s,$(SPEC_VARIANTS),$(foreach i,$(INLINE_VARIANTS),$s_$i))
 
-# Build settings
-TARGET ?= mt_pth
-MT_CORES ?= 32
-CLASS ?= S
-RUNS := 20
 SOURCE := src/MG.sac
-SAC2CFLAGS := -maxwlur 27 -v0 -noSOP -noSRP -maxoptcyc 30 -maxspec 100 
-SAC2CFLAGS_slurm := $(SAC2CFLAGS) -mt_bind NUMA
-PYTHON := venv/bin/python3
 
-# SLURM Configuration (set SLURM_ENABLE=1 to enable)
-SLURM_CPUS ?= 32
-SLURM_MEM ?= 60G
-SLURM_ACCOUNT ?= csmpi
-SLURM_PARTITION ?= csmpi_fpga_long
-SLURM_GPU ?= 0 #nvidia_a30:1
-SLURM_TIMELIMIT ?= 00:20:00
-
-# SLURM-specific compilers and library paths (can use numactl on cluster)
-SAC2C_new_slurm := numactl --interleave all /home/rhensen/sac2c/build_p/sac2c_p
-SAC2C_orig_slurm := numactl --interleave all /home/rhensen/sacoriginal/sac2c/build_p/sac2c_p
-LIBFLAGS_new_slurm := -L /home/rhensen/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude -T /home/rhensen/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude -L /home/rhensen/Stdlib/build/lib -T /home/rhensen/Stdlib/build/lib
-LIBFLAGS_orig_slurm := -L /home/rhensen/sacoriginal/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude -T /home/rhensen/sacoriginal/sac2c/build_p/runtime_build/src/runtime_libraries-build/lib/prelude -L /home/rhensen/sacoriginal/Stdlib/build/lib -T /home/rhensen/sacoriginal/Stdlib/build/lib
-
-# Select compilers and execution wrapper based on SLURM mode
+# SLURM inline mode (legacy; kept for compatibility with SLURM_ENABLE=1)
 ifdef SLURM_ENABLE
-  SAC2C_new := $(SAC2C_new_slurm)
-  SAC2C_orig := $(SAC2C_orig_slurm)
-  LIBFLAGS_new := $(LIBFLAGS_new_slurm)
-  LIBFLAGS_orig := $(LIBFLAGS_orig_slurm)
-  SAC2CFLAGS := $(SAC2CFLAGS_slurm)
-  # Runtime wrapper for benchmarks
-  RUN_WRAPPER := numactl --interleave all
-  # SLURM output directory
-  SLURM_LOGS := slurm_logs
-  # Build sbatch command with SLURM options
-  SBATCH_BASE := sbatch --parsable --cpus-per-task=$(SLURM_CPUS) --mem=$(SLURM_MEM) --partition=$(SLURM_PARTITION) --time=$(SLURM_TIMELIMIT)
-  ifneq ($(SLURM_GPU),)
-    SBATCH_BASE += --gres=gpu:$(SLURM_GPU)
-  endif
-  ifneq ($(SLURM_ACCOUNT),)
-    SBATCH_BASE += --account=$(SLURM_ACCOUNT)
-  endif
+  SAC2C_new  := numactl --interleave all $(SAC2C_NEW_SLURM)
+  SAC2C_orig := numactl --interleave all $(SAC2C_ORIG_SLURM)
+  LIBFLAGS_new  := -L $(SAC2C_NEW_DIR_SLURM)/runtime_build/src/runtime_libraries-build/lib/prelude \
+                   -T $(SAC2C_NEW_DIR_SLURM)/runtime_build/src/runtime_libraries-build/lib/prelude \
+                   -L $(STDLIB_BUILD_NEW)/lib -T $(STDLIB_BUILD_NEW)/lib
+  LIBFLAGS_orig := -L $(SAC2C_ORIG_DIR_SLURM)/runtime_build/src/runtime_libraries-build/lib/prelude \
+                   -T $(SAC2C_ORIG_DIR_SLURM)/runtime_build/src/runtime_libraries-build/lib/prelude \
+                   -L $(STDLIB_BUILD_ORIG)/lib -T $(STDLIB_BUILD_ORIG)/lib
+  RUN_WRAPPER  := numactl --interleave all
+  SLURM_LOGS   := slurm_logs
+  SBATCH_BASE  := sbatch --parsable --cpus-per-task=$(SLURM_CPUS) --mem=$(SLURM_MEM) \
+                  --partition=$(SLURM_PARTITION) --time=$(SLURM_TIMELIMIT) \
+                  --account=$(SLURM_ACCOUNT)
 else
   SLURM_LOGS :=
   RUN_WRAPPER :=
@@ -83,15 +128,15 @@ TARGET_RUNTIME_seq :=
 TARGET_RUNTIME_mt_pth := -mt $(MT_CORES)
 TARGET_RUNTIME_cuda_man :=
 
-all: build
+all: run
 
 # Setup Python virtual environment for statistical analysis
-venv: venv/bin/activate
+venv: $(VENV_DIR)/bin/activate
 
-venv/bin/activate:
-	python3 -m venv venv
-	venv/bin/pip install scipy numpy
-	@echo "Virtual environment created. Run 'make benchmark' to use it."
+$(VENV_DIR)/bin/activate:
+	python3 -m venv $(VENV_DIR)
+	$(VENV_DIR)/bin/pip install scipy numpy
+	@echo "Virtual environment created."
 
 S A B C D:
 	@$(MAKE) CLASS=$@ benchmark
@@ -252,9 +297,18 @@ test:
 	@echo "All tests passed!"
 
 clean:
-	$(RM) -rf bin out slurm_logs
+	@ARCHIVE="archive/$$(date +%Y%m%dT%H%M%S)"; \
+	mkdir -p "$$ARCHIVE"; \
+	for d in jobs results summary slurm_logs bin out; do \
+	  [ -e "$$d" ] && mv "$$d" "$$ARCHIVE/" && echo "archived $$d -> $$ARCHIVE/$$d" || true; \
+	done; \
+	[ -f job_ids.txt ] && mv job_ids.txt "$$ARCHIVE/" || true; \
+	echo "Previous run archived to $$ARCHIVE"
 
 distclean: clean
-	$(RM) -rf venv
+	$(RM) -rf venv archive
 
-.PHONY: all benchmark benchmark_new benchmark_orig comparison build build_new build_orig sync test clean distclean venv S A B C D
+.PHONY: all run jobs submit wait status retry collect report print-config \
+        benchmark benchmark_new benchmark_orig comparison \
+        build build_new build_orig sync test \
+        clean distclean venv S A B C D

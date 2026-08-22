@@ -1,0 +1,38 @@
+ISC License
+
+Copyright (c) 2026 Ruben Hensen
+
+This licence covers the contributions of the copyright holder in this
+repository -- the benchmark harness (Makefiles, configuration, job templates
+and the scripts under MG/sac/scripts and MG/sac/jobs) and all measurement data
+produced by it (MG/sac/archive, MG/sac/results, MG/sac/summary and the SLURM
+.out/.err/.jobid records) -- that is, every file in this repository EXCEPT
+those listed under "Files not covered" below.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+
+Files not covered
+-----------------
+
+This repository is a fork of https://github.com/diku-dk/CFAL-bench, which
+publishes no licence of its own. The following files are inherited from
+upstream and remain under the copyright of their respective authors. No
+rights in them are granted by this licence:
+
+  README.md            upstream (Troels Henriksen and CFAL-bench contributors)
+  .gitmodules          upstream (Troels Henriksen)
+  MG/README.md         upstream (`thomas3494`)
+  MG/sac/src/MG.sac    upstream (`thomas3494`, Sven-Bodo Scholz)
+
+Anyone wishing to reuse those files should approach the upstream project.
